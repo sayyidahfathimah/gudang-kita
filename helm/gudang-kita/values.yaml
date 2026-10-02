@@ -1,0 +1,5 @@
+image: {repository: registry.example/gudang-kita, digest: "sha256:REPLACE_WITH_RELEASE_DIGEST"}
+runtimeSecretName: gudang-kita-runtime
+replicaCount: 3
+resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 256Mi}}
+autoscaling: {minReplicas: 3, maxReplicas: 10, cpu: 65}

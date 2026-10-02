@@ -1,0 +1,8 @@
+/vendor/
+.env
+.phpunit.result.cache
+.DS_Store
+var/logs/
+inventory_db_backup.sql
+docker-compose.yml.backup
+backups/

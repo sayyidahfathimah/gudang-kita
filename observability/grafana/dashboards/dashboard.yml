@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+  - name: gudang-kita
+    folder: Gudang Kita
+    type: file
+    options: {path: /etc/grafana/provisioning/dashboards/json}
