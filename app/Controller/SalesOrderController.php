@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controller;
@@ -64,7 +65,8 @@ final class SalesOrderController extends BaseController
             ], $details);
 
             flash('success', 'Sales Order berhasil dibuat.');
-        } catch (\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             flash('error', $e->getMessage());
         }
 
@@ -79,7 +81,7 @@ final class SalesOrderController extends BaseController
 
         if (!$order) {
             http_response_code(404);
-            require BASE_PATH . '/views/404.php';
+            require_once BASE_PATH . '/views/404.php';
             return;
         }
 
@@ -98,7 +100,8 @@ final class SalesOrderController extends BaseController
             $status = (string) ($_POST['status'] ?? '');
             $this->repo->setStatus($id, $status);
             flash('success', 'Status Sales Order diperbarui.');
-        } catch (\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             flash('error', $e->getMessage());
         }
 

@@ -51,7 +51,7 @@
 <section class="content">
 <?php if($m=getFlash('success')):?><div class="alert success"><?=e($m)?></div><?php endif;?>
 <?php if($m=getFlash('error')):?><div class="alert danger"><?=e($m)?></div><?php endif;?>
-<?php include BASE_PATH.'/views/'.str_replace('.','/',$view??'dashboard/index').'.php';?>
+<?php include_once BASE_PATH.'/views/'.str_replace('.','/',$view??'dashboard/index').'.php';?>
 </section>
 </main>
 </div>

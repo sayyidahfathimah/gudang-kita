@@ -7,3 +7,5 @@ inventory_db_backup.sql
 docker-compose.yml.backup
 backups/
 .scannerwork/
+
+build/

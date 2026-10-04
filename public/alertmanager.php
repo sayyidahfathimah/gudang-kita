@@ -1,8 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 define('BASE_PATH', dirname(__DIR__));
-require BASE_PATH . '/app/bootstrap.php';
+require_once BASE_PATH . '/app/bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
