@@ -4,3 +4,4 @@ vendor
 var
 inventory_db_backup.sql
 backups/
+.scannerwork/
