@@ -9,4 +9,6 @@ final class Auth {
  public static function user(): array { return ['id'=>self::id(),'username'=>$_SESSION['username']??'','name'=>$_SESSION['name']??'','role'=>self::role()]; }
  public static function require(): void { if (!self::check()) { redirect('login'); } }
  public static function requireAdmin(): void { self::require(); if (self::role()!=='Admin') { http_response_code(403); require BASE_PATH.'/views/403.php'; exit; } }
+ public static function requireWarehouseAccess(): void { self::require(); if (!in_array(self::role(),['Admin','WarehouseStaff'],true)) { http_response_code(403); require BASE_PATH.'/views/403.php'; exit; } }
+ public static function requireProjectAccess(): void { self::require(); if (!in_array(self::role(),['Admin','Member'],true)) { http_response_code(403); require BASE_PATH.'/views/403.php'; exit; } }
 }

@@ -13,7 +13,7 @@
  <nav>
   <a class="nav-item <?=($_GET['page']??'dashboard')==='dashboard'?'active':''?>" href="?page=dashboard">🏠 Dashboard</a>
   <?php if(($currentUser['role']??'')==='Admin'): ?><div class="nav-label">MANAGEMENT</div><a class="nav-item <?=($_GET['page']??'')==='users'?'active':''?>" href="?page=users">👥 Users</a><?php endif; ?>
-  <?php if(($currentUser['role']??'')==='Admin'): ?>
+  <?php if(in_array(($currentUser['role']??''),['Admin','WarehouseStaff'],true)): ?>
    <div class="nav-label">MASTER DATA</div>
    <?php foreach([['products','📦 Produk'],['customers','👤 Customer'],['suppliers','🚚 Supplier'],['warehouses','🏢 Gudang']] as [$mt,$ml]):?><a class="nav-item <?=($_GET['page']??'')==='masters'&&($_GET['type']??'')===$mt?'active':''?>" href="?page=masters&type=<?=$mt?>"><?=$ml?></a><?php endforeach;?>
    <div class="nav-label">TRANSAKSI</div>
@@ -22,12 +22,9 @@
    <div class="nav-label">INVENTORY</div>
    <a class="nav-item <?=($_GET['page']??'')==='stock'?'active':''?>" href="?page=stock">📊 Stok</a>
    <a class="nav-item <?=($_GET['page']??'')==='movements'?'active':''?>" href="?page=movements">🔄 Stock Movement</a>
-   <div class="nav-label">REPORT</div>
-   <a class="nav-item <?=($_GET['page']??'')==='reports'?'active':''?>" href="?page=reports">📋 Laporan</a>
+   <?php if(($currentUser['role']??'')==='Admin'): ?><div class="nav-label">REPORT</div><a class="nav-item <?=($_GET['page']??'')==='reports'?'active':''?>" href="?page=reports">📋 Laporan</a><?php endif; ?>
   <?php endif; ?>
-  <div class="nav-label">PROJECT MANAGEMENT</div>
-  <a class="nav-item <?=($_GET['page']??'')==='projects'?'active':''?>" href="?page=projects">📁 Projects</a>
-  <a class="nav-item <?=($_GET['page']??'')==='tasks'?'active':''?>" href="?page=tasks">✅ Tasks</a>
+  <?php if(in_array(($currentUser['role']??''),['Admin','Member'],true)): ?><div class="nav-label">PROJECT MANAGEMENT</div><a class="nav-item <?=($_GET['page']??'')==='projects'?'active':''?>" href="?page=projects">📁 Projects</a><a class="nav-item <?=($_GET['page']??'')==='tasks'?'active':''?>" href="?page=tasks">✅ Tasks</a><?php endif; ?>
  </nav>
 </aside>
 

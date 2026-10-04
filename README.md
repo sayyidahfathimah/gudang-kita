@@ -117,6 +117,14 @@ composer install
 vendor/bin/phpunit
 ```
 
+### Integration test
+
+Jalankan aplikasi Docker terlebih dahulu, lalu jalankan pemeriksaan endpoint aplikasi dan database:
+
+```bash
+APP_URL=http://localhost:8080 vendor/bin/phpunit --testsuite Integration
+```
+
 ## Project Structure
 
 ```text

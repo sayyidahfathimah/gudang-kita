@@ -23,7 +23,7 @@ CREATE TABLE users (
  password VARCHAR(255) NOT NULL,
  name VARCHAR(100) NOT NULL,
  email VARCHAR(150) NULL UNIQUE,
- role ENUM('Admin','Member') NOT NULL DEFAULT 'Member',
+ role ENUM('Admin','WarehouseStaff','Member') NOT NULL DEFAULT 'Member',
  is_active TINYINT(1) NOT NULL DEFAULT 1,
  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -195,7 +195,8 @@ CREATE TABLE stock_movements (
 INSERT INTO users(username,password,name,email,role,is_active) VALUES
 ('admin', '$2y$12$EzaiZWlZupPg4bC81bkmVeBiu5VUEAtxvhyIAs9LGdM.bxFe.tUw6', 'Administrator', 'admin@example.test', 'Admin', 1),
 ('member1', '$2y$12$yfIZUXvwqO6zDrTBzT8fNOqCpRt1TaXi9sU.mxi4YHNeHNihU4kB.', 'Member One', 'member1@example.test', 'Member', 1),
-('member2', '$2y$12$yfIZUXvwqO6zDrTBzT8fNOqCpRt1TaXi9sU.mxi4YHNeHNihU4kB.', 'Member Two', 'member2@example.test', 'Member', 1);
+('member2', '$2y$12$yfIZUXvwqO6zDrTBzT8fNOqCpRt1TaXi9sU.mxi4YHNeHNihU4kB.', 'Member Two', 'member2@example.test', 'Member', 1),
+('warehouse1', '$2y$12$yfIZUXvwqO6zDrTBzT8fNOqCpRt1TaXi9sU.mxi4YHNeHNihU4kB.', 'Petugas Gudang', 'warehouse1@example.test', 'WarehouseStaff', 1);
 
 INSERT INTO projects(name,description,status,start_date,target_date) VALUES
 ('Website Revamp','Redesign and improve the company public website.','Active','2026-09-01','2026-10-15'),

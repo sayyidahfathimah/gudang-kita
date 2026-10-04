@@ -1,14 +1,23 @@
 # ERD
 
-```text
-USERS (1) ─────< TASKS >───── (1) PROJECTS
-  id PK             id PK          id PK
-  username          project_id FK  name
-  role              assignee_id FK status
-  is_active         status         start_date
-                    priority        target_date
-                    due_date
+ERD lengkap tersedia pada [dokumentasi summary](../dokumentasi-summary.md#6-erd-ringkas). Relasi utama basis data:
+
+```mermaid
+erDiagram
+    USERS ||--o{ TASKS : assignee_id
+    PROJECTS ||--o{ TASKS : project_id
+    SUPPLIERS ||--o{ PURCHASE_ORDERS : supplier_id
+    WAREHOUSES ||--o{ PURCHASE_ORDERS : warehouse_id
+    PURCHASE_ORDERS ||--|{ PURCHASE_ORDER_DETAILS : purchase_order_id
+    PRODUCTS ||--o{ PURCHASE_ORDER_DETAILS : product_id
+    CUSTOMERS ||--o{ SALES_ORDERS : customer_id
+    WAREHOUSES ||--o{ SALES_ORDERS : warehouse_id
+    SALES_ORDERS ||--|{ SALES_ORDER_DETAILS : sales_order_id
+    PRODUCTS ||--o{ SALES_ORDER_DETAILS : product_id
+    PRODUCTS ||--o{ STOCKS : product_id
+    WAREHOUSES ||--o{ STOCKS : warehouse_id
+    PRODUCTS ||--o{ STOCK_MOVEMENTS : product_id
+    WAREHOUSES ||--o{ STOCK_MOVEMENTS : warehouse_id
 ```
 
-Foreign keys: `tasks.project_id → projects.id` and `tasks.assignee_id → users.id`.
-Indexes are present on project status/target and task project/assignee/status/due/status for common list and dashboard queries.
+`stocks` memiliki unique key `(product_id, warehouse_id)` agar satu produk hanya mempunyai satu saldo pada satu gudang. Constraint `current_stock >= 0` menjaga stok tidak negatif.

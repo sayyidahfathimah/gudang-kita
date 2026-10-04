@@ -12,3 +12,7 @@
 | T08 | Task list pagination | 10 rows/page |
 | T09 | Task search + filter + page 2 | Filters remain active |
 | T10 | Missing route/data | 404 |
+| T11 | Petugas Gudang membuka stok, PO, dan SO | Diizinkan sesuai role WarehouseStaff |
+| T12 | Member membuka transaksi atau stok | 403 |
+| T13 | Sales Order Completed dengan stok kurang | Ditolak tanpa membuat stock movement OUT |
+| T14 | Endpoint `/health/ready` | JSON `status: ok` dan `check: ready` |

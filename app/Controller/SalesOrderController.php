@@ -21,7 +21,7 @@ final class SalesOrderController extends BaseController
 
     public function index(): void
     {
-        Auth::require();
+        Auth::requireWarehouseAccess();
 
         $this->view('sales/index', [
             'pageTitle' => 'Sales Order',
@@ -73,7 +73,7 @@ final class SalesOrderController extends BaseController
 
     public function show(int $id): void
     {
-        Auth::require();
+        Auth::requireWarehouseAccess();
 
         $order = $this->repo->find($id);
 
@@ -91,7 +91,7 @@ final class SalesOrderController extends BaseController
 
     public function status(int $id): void
     {
-        Auth::requireAdmin();
+        Auth::requireWarehouseAccess();
         $this->csrf();
 
         try {

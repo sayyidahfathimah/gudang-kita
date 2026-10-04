@@ -9,6 +9,8 @@ if(session_status()===PHP_SESSION_NONE){session_name('gudang_kita_session');sess
 $page=(string)($_GET['page']??'dashboard');$action=(string)($_GET['action']??'index');$id=(int)($_GET['id']??0);
 $public=['login'];
 if(!in_array($page,$public,true)&&!isset($_SESSION['user_id'])) redirect('login');
+if(in_array($page,['projects','tasks'],true)&&!in_array((string)($_SESSION['role']??''),['Admin','Member'],true)){http_response_code(403);require BASE_PATH.'/views/403.php';exit;}
+if(in_array($page,['purchase','sales','stock','movements'],true)&&!in_array((string)($_SESSION['role']??''),['Admin','WarehouseStaff'],true)){http_response_code(403);require BASE_PATH.'/views/403.php';exit;}
 $map=['login'=>\App\Controller\Auth\LoginController::class,'logout'=>\App\Controller\Auth\LoginController::class,'dashboard'=>\App\Controller\DashboardController::class,'users'=>\App\Controller\UserController::class,'projects'=>\App\Controller\ProjectController::class,'tasks'=>\App\Controller\TaskController::class,'masters'=>\App\Controller\InventoryMasterController::class,'stock'=>\App\Controller\InventoryController::class,'movements'=>\App\Controller\InventoryController::class,'purchase'=>\App\Controller\PurchaseOrderController::class,'sales'=>\App\Controller\SalesOrderController::class,'reports'=>\App\Controller\ReportController::class];
 if(!isset($map[$page])){http_response_code(404);require BASE_PATH.'/views/404.php';exit;}
 try{$c=new $map[$page]($pdo);

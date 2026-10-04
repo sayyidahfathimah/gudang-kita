@@ -2,7 +2,7 @@
 
 ## Admin
 1. Sebagai Admin, saya dapat login dan logout dengan aman.
-2. Sebagai Admin, saya dapat membuat, melihat, mengubah, mengaktifkan/nonaktifkan, dan menghapus user demo.
+2. Sebagai Admin, saya dapat membuat, melihat, mengubah, mengaktifkan/nonaktifkan, dan menghapus user.
 3. Sebagai Admin, saya dapat membuat dan mengelola project.
 4. Sebagai Admin, saya dapat membuat, mengubah, menghapus, dan menetapkan task kepada Member.
 5. Sebagai Admin, saya dapat melihat dashboard seluruh project dan task.
