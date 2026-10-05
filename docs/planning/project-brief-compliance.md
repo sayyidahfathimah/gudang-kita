@@ -30,7 +30,7 @@ Acuan: *Intermediate Programmer — Final Project Brief: Inventory & Order Manag
 | TEST-03 | PHPStan 5+ atau PHPCS PSR-12, no critical | Lulus PHPStan level 5 | PHPStan 2.2.17 pada seluruh `app/`: 0 error, exit code 0. Output aktual ada di `docs/quality/phpstan-level5.txt`. |
 | Docker 5.1 | app + MySQL dari clean environment, env, README smoke test | Lulus pada salinan folder bersih | Salinan tanpa `.env`, vendor, dan volume lama dijalankan dengan `.env.example` pada port terpisah. App/DB sehat, login tiga role berhasil, contoh PO/SO melalui service berjalan, unit 31/55 dan integration 9/28 lulus. |
 | Git/AI | Repo individual, tidak ada secret, refactor commit, AI log rinci | Sebagian ada | `.env` dan backup di-ignore serta tidak terlacak; pencarian path history dan pola token/private key pada 11 commit tidak menemukan kandidat. Commit refactor `e60898f` tersedia dan AI log diperbarui. Pola ini tidak menjamin semua jenis secret/PII terdeteksi. |
-| Demo/submission | README, docs, screenshot, release/tag | Rilis teknis v1.0.1 tersedia | Scope/story/ERD/runbook, screenshot, PHPStan 5, clean install, sebelas skenario HTTP, dan pemeriksaan pola token Git telah dibuktikan. Tag `v1.0.1` menunjuk revisi bukti; screenshot dipakai sebagai cadangan. |
+| Demo/submission | README, docs, screenshot, release/tag | Rilis teknis v1.0.2 tersedia | Scope/story/ERD/runbook, screenshot, PHPStan 5, clean install, sebelas skenario HTTP, dan pemeriksaan pola token Git telah dibuktikan. Tag `v1.0.2` memuat perbaikan antrean dan filter stok; screenshot dipakai sebagai cadangan. |
 
 ## Perbaikan yang masih perlu dikerjakan pada kode
 

@@ -16,7 +16,11 @@ final class InventoryController extends BaseController
     public function stock(): void
     {
         Auth::requireWarehouseAccess();
-        $f = ['search' => trim((string)($_GET['search'] ?? '')),'warehouse_id' => (string)($_GET['warehouse_id'] ?? '')];
+        $stockStatus = (string)($_GET['stock_status'] ?? 'available');
+        if (!in_array($stockStatus, ['available', 'zero', 'all'], true)) {
+            $stockStatus = 'available';
+        }
+        $f = ['search' => trim((string)($_GET['search'] ?? '')),'warehouse_id' => (string)($_GET['warehouse_id'] ?? ''),'stock_status' => $stockStatus];
         $result = paginate($this->repo->stockRows($f), (int)($_GET['current_page'] ?? 1));
         $this->view('inventory/stock', ['pageTitle' => 'Stok','result' => $result,'warehouses' => $this->repo->warehouses(),'filters' => $f]);
     }

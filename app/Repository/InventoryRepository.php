@@ -37,7 +37,13 @@ final class InventoryRepository
         if (($f['warehouse_id'] ?? '') !== '') {
             $where[] = 's.warehouse_id=?';
             $p[] = (int)$f['warehouse_id'];
-        }$sql = 'SELECT s.*,p.code product_code,p.name product_name,p.unit,p.minimum_stock,w.code warehouse_code,w.name warehouse_name FROM stocks s JOIN products p ON p.id=s.product_id JOIN warehouses w ON w.id=s.warehouse_id'.($where ? ' WHERE '.implode(' AND ', $where) : '').' ORDER BY p.name,w.name';
+        }
+        if (($f['stock_status'] ?? 'all') === 'available') {
+            $where[] = 's.current_stock > 0';
+        } elseif (($f['stock_status'] ?? '') === 'zero') {
+            $where[] = 's.current_stock = 0';
+        }
+        $sql = 'SELECT s.*,p.code product_code,p.name product_name,p.unit,p.minimum_stock,w.code warehouse_code,w.name warehouse_name FROM stocks s JOIN products p ON p.id=s.product_id JOIN warehouses w ON w.id=s.warehouse_id'.($where ? ' WHERE '.implode(' AND ', $where) : '').' ORDER BY p.name,w.name';
         $q = $this->pdo->prepare($sql);
         $q->execute($p);
         return $q->fetchAll();

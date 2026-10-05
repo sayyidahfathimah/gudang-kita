@@ -1,6 +1,6 @@
 # Checklist Final Project — Gudang Kita
 
-**Acuan:** `Guidelines - Presentation Final Project (Peserta).pdf` (2 halaman) dan `Project Brief - Programmer.pdf` (19 halaman). Pemeriksaan lokal: **6 Oktober 2026**. Checklist kerja ini berfokus pada bukti teknis; rincian administrasi dan jadwal pada PDF asli tidak disalin ke sini. Status **Terverifikasi** berarti ada bukti pemeriksaan, **Perlu bukti** berarti implementasi atau demonstrasinya belum diperiksa lengkap, dan **Belum tersedia** berarti artefak yang diwajibkan belum ditemukan. Rilis teknis `v1.0.1` menunjuk revisi yang diuji; dua bukti historis/eksternal di bawah masih terbuka.
+**Acuan:** `Guidelines - Presentation Final Project (Peserta).pdf` (2 halaman) dan `Project Brief - Programmer.pdf` (19 halaman). Pemeriksaan lokal: **6 Oktober 2026**. Checklist kerja ini berfokus pada bukti teknis; rincian administrasi dan jadwal pada PDF asli tidak disalin ke sini. Status **Terverifikasi** berarti ada bukti pemeriksaan, **Perlu bukti** berarti implementasi atau demonstrasinya belum diperiksa lengkap, dan **Belum tersedia** berarti artefak yang diwajibkan belum ditemukan. Rilis teknis `v1.0.2` memuat perbaikan terbaru; dua bukti historis/eksternal di bawah masih terbuka.
 
 ## A. Guidelines — bukti teknis
 
@@ -9,7 +9,7 @@
 | Docker Compose menjalankan aplikasi dan MySQL dari folder bersih mengikuti README | Terverifikasi | [README](../../README.md) dan [hasil pengujian](../testing/results-2026-10-05.md). Salinan bersih telah diuji; aplikasi dan DB aktif saat audit berstatus **healthy**. |
 | Data demo aman, konsisten, mencakup alur utama dan pembatasan tiga role | Terverifikasi | Seed bersih menyediakan 1 Admin, 2 Sales, 2 Warehouse Staff, 2 gudang, 30 produk, 25 order. Login dan pembatasan role diuji lewat [HTTP acceptance](../../tests/http_acceptance.py); konsistensi stok/order pada seed ada di [bukti checklist](../testing/checklist-evidence-2026-10-06.md). Data aktif lama memiliki batasan pada bagian D. |
 | Unit test, integration test, dan static analysis tersedia | Terverifikasi | Saat audit: **33 unit/61 assertion**, **9 integration MySQL/28 assertion** pada audit sebelumnya, dan **PHPStan level 5: 0 error**. [Bukti terbaru](../testing/checklist-evidence-2026-10-06.md) dan [hasil sebelumnya](../testing/results-2026-10-05.md). |
-| SonarQube lulus dan hasilnya dipahami | Terverifikasi | [Pemindaian source terbaru](../quality/sonarqube-2026-10-06.md): quality gate `OK`, *new code coverage* **93,9%**, duplikasi baru **2,30%**, dan **0 issue terbuka**. Scan ulang setelah commit diperlukan agar Sonar menampilkan revisi Git yang sama dengan rilis. |
+| SonarQube lulus dan hasilnya dipahami | Terverifikasi | [Pemindaian ulang](../quality/sonarqube-2026-10-06.md): quality gate `OK`, *new code coverage* **93,9%**, duplikasi baru **2,29%**, dan **0 issue terbuka**. Bukti untuk rilis harus memakai pemindaian sesudah commit agar Sonar menampilkan revisi Git yang sama dengan tag. |
 | Source, skema, query, Docker, class diagram, ADR, dan refactor siap dibuka | Terverifikasi | [Skema](../../database/schema-and-seed.sql), [diagram as-built](../architecture/class-diagram.md), [ADR](../architecture/adr-002-atomic-stock-ledger.md), [refactor log](../quality/refactor-log.md), [Docker Compose](../../docker-compose.yml). |
 | Screenshot cadangan | Terverifikasi | [Screenshot](../testing/screenshots/README.md) desktop/360 px untuk sembilan keadaan halaman tersedia. |
 
@@ -51,11 +51,11 @@
 | TEST-03: PHPStan 5+ nol critical, test independen | Terverifikasi | PHPStan level 5: 0 error; unit/integration lulus pada container terpisah. |
 | Docker clean start, `.env.example`, README, app+DB service | Terverifikasi | Salinan folder bersih dan login/alur utama sudah diuji; [README](../../README.md), [Compose](../../docker-compose.yml). |
 | Git individual, tanpa secret/PII aktif dalam repo/history, AI disclosure | Terverifikasi | Remote `origin` adalah repo pribadi peserta. `.env` dan backup di-ignore; [pemeriksaan path dan pola](../testing/checklist-evidence-2026-10-06.md) pada 11 commit dan source saat ini tidak menemukan kandidat token/private key/PII aktif. [AI log](../../ai-usage-log.md) ada. Pemindaian pola tidak menjamin semua bentuk rahasia terdeteksi. |
-| Paket dokumentasi, data minimum demo, tag/release final | Terverifikasi | README, dokumentasi, seed 30 produk/25 order, test, screenshot, dan tag rilis `v1.0.1` tersedia pada revisi yang sama. Dua bukti DESIGN-01/04 tetap dinyatakan terbuka, bukan disamarkan oleh tag. |
+| Paket dokumentasi, data minimum demo, tag/release final | Terverifikasi | README, dokumentasi, seed 30 produk/25 order, test, screenshot, dan tag rilis `v1.0.2` tersedia pada revisi yang sama. Dua bukti DESIGN-01/04 tetap dinyatakan terbuka, bukan disamarkan oleh tag. |
 
 ## D. Pekerjaan sebelum dinyatakan sepenuhnya siap
 
-1. **Gunakan revisi rilis yang benar:** tag `v1.0.1` berisi perbaikan dan bukti 6 Oktober. Tag `v1.0.0` adalah revisi lama; hasil Sonar terbaru tidak berlaku untuk tag lama itu.
+1. **Gunakan revisi rilis yang benar:** tag `v1.0.2` berisi perbaikan antrean, filter stok, dan bukti 6 Oktober. Tag `v1.0.0` dan `v1.0.1` adalah revisi lama; hasil Sonar terbaru tidak berlaku untuk tag lama itu.
 2. **Lengkapi pemeriksaan manual:** bukti otomatis untuk empty state PO/SO, upload gambar, filter/sort/pagination, tiga role, dua gudang berbeda, angka laporan, dan 149 label form ada di [hasil 6 Oktober](../testing/checklist-evidence-2026-10-06.md). Audit manual kombinasi warna/keyboard yang belum dicakup serta isi histori Git untuk secret/PII.
 3. **Catat batas data lama:** backup dan 807 pasangan stok nol sudah diselesaikan tanpa mengubah saldo lama. Movement historis tanpa aktor asli tidak boleh direka. [Batas rekonsiliasi](project-brief-compliance.md) menjelaskan data aktif.
 4. **Cari artefak diagram initial yang benar-benar dibuat sebelum coding.** Jika tidak ada, sampaikan sebagai kekurangan kepada assessor.
