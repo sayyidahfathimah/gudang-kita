@@ -31,23 +31,26 @@ function paginate(array $items, int $page, int $perPage = 10): array
     $page = min(max(1, $page), $pages);
     return ['items' => array_slice($items, ($page - 1) * $perPage, $perPage),'page' => $page,'pages' => $pages,'total' => $total];
 }
+function paginationLink(int $page, string $label, array $params, string $class = ''): string
+{
+    $query = http_build_query(array_merge($params, ['current_page' => $page]));
+    return '<a class="page-btn '.$class.'" href="?'.e($query).'">'.$label.'</a>';
+}
+
 function paginationLinks(array $result, array $params): string
 {
     if ($result['pages'] <= 1) {
         return '';
     }
-        $link = function (int $page, string $label, string $class = '') use ($params) {
-        $q = $params;
-        $q['current_page'] = $page;
-        return '<a class="page-btn '.$class.'" href="?'.e(http_build_query($q)).'">'.$label.'</a>';
-    };
     $html = '<nav class="pagination" aria-label="Pagination">';
     if ($result['page'] > 1) {
-        $html .= $link($result['page'] - 1, '‹ Sebelumnya');
-    }for ($i = 1;$i <= $result['pages'];$i++) {
-        $html .= $link($i, (string)$i, $i === $result['page'] ? 'current' : '');
+        $html .= paginationLink($result['page'] - 1, '‹ Sebelumnya', $params);
     }
-        if ($result['page'] < $result['pages']) {
-        $html .= $link($result['page'] + 1, 'Berikutnya ›');
-    }return $html.'</nav>';
+    for ($i = 1; $i <= $result['pages']; $i++) {
+        $html .= paginationLink($i, (string) $i, $params, $i === $result['page'] ? 'current' : '');
+    }
+    if ($result['page'] < $result['pages']) {
+        $html .= paginationLink($result['page'] + 1, 'Berikutnya ›', $params);
+    }
+    return $html.'</nav>';
 }
