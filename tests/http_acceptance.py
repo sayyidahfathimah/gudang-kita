@@ -5,6 +5,7 @@ Never redirect this suite to the live app: it creates/deletes test users.
 """
 import html
 import http.cookiejar
+import base64
 import re
 import unittest
 import urllib.error
@@ -40,6 +41,21 @@ class Browser:
 
     def post(self, query, data):
         return self.request(query, dict(data, csrf_token=self.token()))
+
+    def upload(self, query, data, filename, contents, content_type):
+        boundary = 'acceptance-' + uuid.uuid4().hex
+        parts = []
+        for key, value in dict(data, csrf_token=self.token()).items():
+            parts.append((f'--{boundary}\r\nContent-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n').encode())
+        parts.append((f'--{boundary}\r\nContent-Disposition: form-data; name="image"; filename="{filename}"\r\nContent-Type: {content_type}\r\n\r\n').encode() + contents + b'\r\n')
+        parts.append(f'--{boundary}--\r\n'.encode())
+        request = urllib.request.Request(BASE + '?' + query, b''.join(parts), headers={'Content-Type': 'multipart/form-data; boundary=' + boundary})
+        try:
+            response = self.opener.open(request, timeout=15)
+        except urllib.error.HTTPError as error:
+            response = error
+        self.body = response.read().decode()
+        return response.code, self.body, response.url
 
     def login(self, role):
         self.request('page=login')
@@ -164,6 +180,65 @@ class AcceptanceTest(unittest.TestCase):
                 self.assertEqual(codes(empty), [])
                 descending = codes(browser.request(base + '&sort=code_desc')[1])
                 self.assertEqual(descending, sorted(descending, reverse=True))
+
+    def test_order_search_filter_sort_pagination_and_empty(self):
+        for role, page, prefix, allowed in [
+            ('Admin', 'purchase', 'PO', True), ('WarehouseStaff', 'purchase', 'PO', True),
+            ('Admin', 'sales', 'SO', True), ('Sales', 'sales', 'SO', True),
+            ('WarehouseStaff', 'sales', 'SO', True), ('Sales', 'purchase', 'PO', False),
+        ]:
+            with self.subTest(role=role, page=page):
+                browser = Browser()
+                browser.login(role)
+                if not allowed:
+                    self.assertEqual(browser.request('page=' + page)[0], 403)
+                    continue
+                base = 'page=' + page
+                first = browser.request(base + '&sort=date_asc')[1]
+                numbers = lambda body: re.findall(r'>' + prefix + r'-SEED-\d{3}</a>', body)
+                expected = 6 if role == 'Sales' else (13 if page == 'purchase' else 12)
+                self.assertEqual(len(numbers(first)), 10 if expected > 10 else expected)
+                if expected > 10:
+                    second = browser.request(base + '&sort=date_asc&current_page=2')[1]
+                    self.assertEqual(len(numbers(second)), expected - 10)
+                    self.assertFalse(set(numbers(first)) & set(numbers(second)))
+                    self.assertIn('sort=date_asc', second)
+                filtered = browser.request(base + '&search=SEED&status=Draft&sort=date_asc')[1]
+                self.assertIn('name="search" value="SEED"', filtered)
+                self.assertIn('value="Draft" selected', filtered)
+                self.assertIn('value="date_asc" selected', filtered)
+                self.assertIn('>Draft</span>', filtered)
+                self.assertEqual(len(numbers(browser.request(base + '&search=' + prefix + '-SEED-001')[1])), 1 if role != 'Sales' or page == 'purchase' else 0)
+                empty = browser.request(base + '&search=NO_ORDER_999999')[1]
+                self.assertIn('class="empty"', empty)
+                self.assertEqual(numbers(empty), [])
+
+    def test_product_image_upload_validation(self):
+        browser = self.admin()
+        data = {'type': 'products', 'name': 'Upload ' + uuid.uuid4().hex[:8],
+                'category_id': '1', 'unit': 'pcs', 'purchase_price': '100',
+                'selling_price': '150', 'minimum_stock': '3', 'status': 'Active'}
+        browser.request('page=masters&type=products&action=create')
+        invalid = browser.upload('page=masters&type=products&action=store', data, 'bad.txt', b'not an image', 'text/plain')[1]
+        self.assertIn('Format gambar yang diterima hanya JPG, PNG, atau WebP.', invalid)
+        self.assertIn('value="' + data['name'] + '"', invalid)
+        browser.request('page=masters&type=products&action=create')
+        oversized = browser.upload('page=masters&type=products&action=store', data, 'large.png', b'x' * (2 * 1024 * 1024 + 1), 'image/png')[1]
+        self.assertIn('Ukuran gambar maksimal 2 MB.', oversized)
+        browser.request('page=masters&type=products&action=create')
+        png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==')
+        code, body, _ = browser.upload('page=masters&type=products&action=store', data, 'valid.png', png, 'image/png')
+        self.assertEqual(code, 200)
+        self.assertIn('Data berhasil ditambahkan.', body)
+        body = browser.request('page=masters&type=products&search=' + urllib.parse.quote(data['name']))[1]
+        row = next(row for row in re.findall(r'<tr>(.*?)</tr>', body, re.S) if data['name'] in row)
+        product_id = re.search(r'action=edit(?:&amp;|&)id=(\d+)', row).group(1)
+        try:
+            edit = browser.request('page=masters&type=products&action=edit&id=' + product_id)[1]
+            self.assertRegex(edit, r'uploads/products/[a-f0-9]{32}\.png')
+        finally:
+            browser.request('page=masters&type=products&search=' + urllib.parse.quote(data['name']))
+            browser.post('page=masters&type=products&action=delete&id=' + product_id, {'type': 'products'})
 
     def test_product_master_crud_validation_and_deactivation(self):
         browser = self.admin()

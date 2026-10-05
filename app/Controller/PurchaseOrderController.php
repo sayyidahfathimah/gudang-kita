@@ -16,12 +16,12 @@ final class PurchaseOrderController extends BaseController
     private InventoryRepository $inv;
     private PurchaseOrderService $service;
 
-    public function __construct(\PDO $pdo, ?PurchaseOrderRepository $repo = null, ?InventoryRepository $inventory = null, ?PurchaseOrderService $service = null)
+    public function __construct(\PDO $pdo, PurchaseOrderRepository $repo, InventoryRepository $inventory, PurchaseOrderService $service)
     {
         parent::__construct($pdo);
-        $this->repo = $repo ?? new PurchaseOrderRepository($pdo);
-        $this->inv = $inventory ?? new InventoryRepository($pdo);
-        $this->service = $service ?? new PurchaseOrderService($this->repo);
+        $this->repo = $repo;
+        $this->inv = $inventory;
+        $this->service = $service;
     }
 
     public function index(): void

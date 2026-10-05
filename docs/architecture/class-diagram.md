@@ -11,6 +11,9 @@ classDiagram
     class BaseController {
         #PDO pdo
     }
+    class ControllerFactory {
+        +create(controllerClass, PDO)
+    }
     class PurchaseOrderController {
         -PurchaseOrderRepository repo
         -InventoryRepository inv
@@ -74,12 +77,16 @@ classDiagram
 
     BaseController <|-- PurchaseOrderController
     BaseController <|-- SalesOrderController
+    ControllerFactory --> PurchaseOrderController : inject dependency
+    ControllerFactory --> SalesOrderController : inject dependency
+    ControllerFactory --> PurchaseOrderRepository : instantiate
+    ControllerFactory --> SalesOrderRepository : instantiate
 
     PurchaseOrderController --> PurchaseOrderService : menggunakan
-    PurchaseOrderController --> PurchaseOrderRepository : membaca PO / default constructor
+    PurchaseOrderController --> PurchaseOrderRepository : membaca PO
     PurchaseOrderController --> InventoryRepository : pilihan form
     SalesOrderController --> SalesOrderService : menggunakan
-    SalesOrderController --> SalesOrderRepository : membaca SO / default constructor
+    SalesOrderController --> SalesOrderRepository : membaca SO
     SalesOrderController --> InventoryRepository : pilihan form
 
     PurchaseOrderService ..> PurchaseOrderWorkflowRepositoryInterface : constructor injection
@@ -131,6 +138,6 @@ classDiagram
     ReportRepository --> PDO : query
 ```
 
-Controller PO/SO menerima PDO dan dependency konkret opsional, tetapi jika tidak diberikan masih membuat repository sendiri. Jadi dependency inversion **sudah berlaku pada Service PO/SO**, belum merata pada seluruh controller; hal ini dicatat sebagai [technical debt](../quality/tech-debt.md). Kode rujukan: [controller PO](../../app/Controller/PurchaseOrderController.php), [controller SO](../../app/Controller/SalesOrderController.php), [service PO](../../app/Service/PurchaseOrderService.php), [service SO](../../app/Service/SalesOrderService.php), dan [kontrak repository](../../app/Contract/).
+`ControllerFactory` di [composition root](../../app/Support/ControllerFactory.php) membuat repository dan service PO/SO, lalu menginjeksi dependency wajib ke controller. Dependency inversion berlaku pada Service PO/SO melalui interface dengan implementasi MySQL dan fake untuk test. Controller CRUD dan laporan lain masih membuat repository konkret; hal ini dicatat sebagai [technical debt](../quality/tech-debt.md). Kode rujukan: [controller PO](../../app/Controller/PurchaseOrderController.php), [controller SO](../../app/Controller/SalesOrderController.php), [service PO](../../app/Service/PurchaseOrderService.php), [service SO](../../app/Service/SalesOrderService.php), dan [kontrak repository](../../app/Contract/).
 
 Perbandingan dengan [diagram rancangan retrospektif](../planning/class-diagram-initial.md): rancangan konseptual hanya menunjukkan tiga layer dan kontrak repository. Implementasi as-built menambah pemisahan kontrak PO untuk `find()`, repository baca katalog, enum tipe movement, dan fake untuk unit test. Perbandingan ini menjelaskan perubahan desain, **bukan bukti** adanya diagram initial yang dibuat sebelum coding.

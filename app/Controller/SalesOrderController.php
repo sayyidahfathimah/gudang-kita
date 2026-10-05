@@ -13,12 +13,10 @@ final class SalesOrderController extends BaseController
 {
     private SalesOrderService $service;
 
-    public function __construct(\PDO $pdo, private ?SalesOrderRepository $repo = null, private ?InventoryRepository $inventory = null, ?SalesOrderService $service = null)
+    public function __construct(\PDO $pdo, private SalesOrderRepository $repo, private InventoryRepository $inventory, SalesOrderService $service)
     {
         parent::__construct($pdo);
-        $this->repo ??= new SalesOrderRepository($pdo);
-        $this->inventory ??= new InventoryRepository($pdo);
-        $this->service = $service ?? new SalesOrderService($this->repo);
+        $this->service = $service;
     }
 
     public function index(): void

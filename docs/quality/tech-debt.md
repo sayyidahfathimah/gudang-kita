@@ -2,7 +2,7 @@
 
 | Prioritas | Keterbatasan | Dampak | Perbaikan ideal |
 | --- | --- | --- | --- |
-| Tinggi | Controller masih membuat beberapa repository konkret sebagai default | Unit test HTTP sulit diisolasi | Susun composition root manual dan injeksikan kontrak ke controller |
+| Sedang | Controller CRUD dan laporan masih membuat repository konkret; composition root baru mencakup PO/SO | Unit test controller di luar order sulit diisolasi | Perluas factory dan kontrak repository secara bertahap pada modul lain |
 | Tinggi | Diagram initial historis tidak tersedia | Urutan desain sebelum coding tidak dapat dibuktikan | Lampirkan draft asli bila ditemukan; dokumentasikan evolusi desain pada proyek berikutnya sejak awal |
 | Tinggi | Detail transaksi dan aktor sebelum penerapan ledger tidak tersedia | Penyesuaian `LEGACY-BASE-*` hanya membuktikan saldo awal bersih, bukan asal setiap perubahan lama | Pertahankan backup sumber, gunakan semua operasi stok baru melalui service, dan audit histori sumber jika ditemukan |
 | Sedang | Alasan penolakan SO tidak disimpan terpisah | Riwayat keputusan Admin kurang lengkap | Tambah kolom alasan dan aktor penolak melalui migrasi aditif serta tampilkan di detail SO |

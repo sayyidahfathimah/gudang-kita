@@ -13,3 +13,7 @@ Status quality gate: **OK**. Unit test 31/55 assertion dan PHPStan level 5 tanpa
 Pemindaian ulang pada 6 Oktober 2026 untuk commit `ae399ac` (analysis ID `bc636d70-f1c1-4ec0-96e4-9060b7044a09`) menunjukkan **0 issue terbuka** pada API SonarQube (`resolved=false`). Metrik keseluruhan proyek: **0 bug, 0 vulnerability, 0 code smell, 0 security hotspot**, coverage **94,2%**, dan duplikasi **2,9%**. API masih menampilkan **172 issue historis** dengan status `CLOSED` dan resolusi `FIXED`; angka itu bukan issue aktif.
 
 **Batas bukti:** pemindaian commit `ae399ac` tidak lagi menampilkan peringatan *missing blame* dan commit tersebut sudah dikirim ke `origin/main`. Tag `v1.0.0` masih menunjuk revisi lama, sehingga hasil ini tidak boleh disebut sebagai hasil tag tersebut. Simpan tangkapan layar quality gate dengan revisi/analisis terbaru untuk presentasi. Status `OK` dan 0 issue terbuka tidak membuktikan seluruh fitur bebas bug.
+
+## Pemeriksaan ulang perubahan checklist
+
+Setelah 33 unit test/61 assertion menghasilkan `build/logs/clover.xml`, scanner lokal mengirim analisis `4a3aad43-a050-4bbd-814a-6e265154f4f1` atas working tree 6 Oktober. API Sonar menunjukkan quality gate **OK**, cakupan kode baru **93,9%**, duplikasi baru **2,30%**, dan **0 issue terbuka**. Scanner masih mengaitkan analisis dengan revisi Git `7b84d44` dan melaporkan *missing blame* pada file yang belum dikomit; lakukan scan lagi setelah commit final untuk bukti revisi rilis.

@@ -159,7 +159,9 @@ final class InventoryMasterController extends BaseController
         }
         else {
             try {
+                $imagePath = $type === 'products' ? ($this->repo->find($type, $id)['image_path'] ?? null) : null;
                 $this->repo->delete($type, $id);
+                $this->removeProductImage($imagePath);
                 flash('success', 'Data berhasil dihapus.');
             }
         catch (\PDOException $x) {

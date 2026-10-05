@@ -63,7 +63,7 @@ if (!isset($map[$page])) {
     exit;
 }
 try {
-    $c = new $map[$page]($pdo);
+    $c = \App\Support\ControllerFactory::create($map[$page], $pdo);
     if ($page === 'api' && $action === 'availability' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $c->availability();
         exit;

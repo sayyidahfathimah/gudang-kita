@@ -6,6 +6,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts
 FROM php:8.2-apache AS runtime
 
 RUN docker-php-ext-install pdo pdo_mysql
+RUN printf 'upload_max_filesize=3M\npost_max_size=4M\n' > /usr/local/etc/php/conf.d/product-upload.ini
 
 RUN a2enmod rewrite headers
 
