@@ -19,7 +19,7 @@ final class ProjectController extends BaseController
     public function index(): void
     {
         $f = ['search' => trim((string)($_GET['search'] ?? '')),'status' => (string)($_GET['status'] ?? '')];
-        $rows = Auth::role() === 'Admin' ? $this->repo->all($f) : $this->repo->forMember(Auth::id(), $f);
+        $rows = Auth::role() === 'Admin' ? $this->repo->all($f) : $this->repo->forSales(Auth::id(), $f);
         $result = paginate($rows, (int)($_GET['current_page'] ?? 1));
         $this->view('projects/index', ['pageTitle' => 'Projects','result' => $result,'filters' => $f]);
     }
@@ -92,7 +92,7 @@ final class ProjectController extends BaseController
             require_once BASE_PATH.self::NOT_FOUND_VIEW;
             return;
         }
-        if (Auth::role() === 'Member' && !in_array((string)$id, array_map('strval', array_column($this->repo->forMember(Auth::id()), 'id')), true)) {
+        if (Auth::role() === 'Sales' && !in_array((string)$id, array_map('strval', array_column($this->repo->forSales(Auth::id()), 'id')), true)) {
             http_response_code(403);
             require_once BASE_PATH.'/views/403.php';
             return;

@@ -27,6 +27,7 @@ RUN printf '%s\n' \
     > /etc/apache2/conf-available/gudang-kita.conf
 
 RUN a2enconf gudang-kita
+RUN echo 'ServerName localhost' > /etc/apache2/conf-available/server-name.conf && a2enconf server-name
 
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \

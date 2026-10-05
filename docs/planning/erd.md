@@ -1,6 +1,6 @@
 # ERD
 
-ERD lengkap tersedia pada [dokumentasi summary](../dokumentasi-summary.md#6-erd-ringkas). Relasi utama basis data:
+ERD ringkas terbaru tersedia pada [dokumentasi aplikasi](../dokumentasi-summary.md#erd-ringkas). Relasi utama basis data:
 
 ```mermaid
 erDiagram

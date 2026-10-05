@@ -1,116 +1,146 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
-final class SalesOrderRepository
+use App\Entity\StockMovementType;
+use App\Contract\SalesOrderRepositoryInterface;
+
+final class SalesOrderRepository implements SalesOrderRepositoryInterface
 {
     public function __construct(private \PDO $pdo)
     {
     }
-    public function all(): array
+
+    public function list(array $filters = [], ?int $createdBy = null, int $page = 1, int $perPage = 10): array
     {
-        try {
-            $sql = "SELECT so.*,c.name AS customer_name,w.name AS warehouse_name
-          FROM sales_orders so
-          LEFT JOIN customers c ON c.id=so.customer_id
-          LEFT JOIN warehouses w ON w.id=so.warehouse_id
-          ORDER BY so.id DESC";
-            return $this->pdo->query($sql)->fetchAll();
+        $sql = 'SELECT so.*, c.name AS customer_name, w.name AS warehouse_name, creator.name AS creator_name
+            FROM sales_orders so
+            JOIN customers c ON c.id = so.customer_id
+            JOIN warehouses w ON w.id = so.warehouse_id
+            LEFT JOIN users creator ON creator.id = so.created_by';
+        $where = [];
+        $params = [];
+        if ($createdBy !== null) {
+            $where[] = 'so.created_by = ?';
+            $params[] = $createdBy;
         }
-        catch (\Throwable $e) {
-            error_log('SalesOrderRepository::all: '.$e->getMessage());
-            try {
-                $rows = $this->pdo->query("SELECT so.* FROM sales_orders so ORDER BY so.id DESC")->fetchAll();
-                foreach ($rows as &$row) {
-                    $row['customer_name'] = $row['customer_name'] ?? '-';
-                    $row['warehouse_name'] = $row['warehouse_name'] ?? '-';
-                }
-                unset($row);
-                return $rows;
-            }
-        catch (\Throwable $fallback) {
-                error_log('SalesOrderRepository::all fallback: '.$fallback->getMessage());
-                return [];
-            }
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $where[] = '(so.so_number LIKE ? OR c.name LIKE ?)';
+            $params[] = '%'.$search.'%';
+            $params[] = '%'.$search.'%';
         }
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '' && in_array($status, ['Draft','PendingApproval','Approved','Fulfilled','Cancelled'], true)) {
+            $where[] = 'so.status = ?';
+            $params[] = $status;
+        }
+        $from = ' FROM sales_orders so JOIN customers c ON c.id=so.customer_id JOIN warehouses w ON w.id=so.warehouse_id LEFT JOIN users creator ON creator.id=so.created_by';
+        $whereSql = $where ? ' WHERE '.implode(' AND ', $where) : '';
+        $sort = ($filters['sort'] ?? '') === 'date_asc' ? 'so.so_date ASC,so.id ASC' : 'so.so_date DESC,so.id DESC';
+        $count = $this->pdo->prepare('SELECT COUNT(*)'.$from.$whereSql);
+        $count->execute($params);
+        $total = (int) $count->fetchColumn();
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $pages);
+        $offset = ($page - 1) * $perPage;
+        $statement = $this->pdo->prepare('SELECT so.*,c.name customer_name,w.name warehouse_name,creator.name creator_name'.$from.$whereSql." ORDER BY {$sort} LIMIT {$perPage} OFFSET {$offset}");
+        $statement->execute($params);
+        return ['items' => $statement->fetchAll(),'total' => $total,'page' => $page,'per_page' => $perPage,'pages' => $pages];
     }
+
     public function find(int $id): ?array
     {
-        $s = $this->pdo->prepare("SELECT so.*,c.name customer_name,w.name warehouse_name FROM sales_orders so JOIN customers c ON c.id=so.customer_id JOIN warehouses w ON w.id=so.warehouse_id WHERE so.id=?");
-        $s->execute([$id]);
-        $r = $s->fetch();
-        if (!$r) {
+        $statement = $this->pdo->prepare('SELECT so.*, c.name AS customer_name, w.name AS warehouse_name
+            FROM sales_orders so JOIN customers c ON c.id = so.customer_id
+            JOIN warehouses w ON w.id = so.warehouse_id WHERE so.id = ?');
+        $statement->execute([$id]);
+        $order = $statement->fetch();
+        if (!$order) {
             return null;
-        }$q = $this->pdo->prepare("SELECT d.*,p.code product_code,p.name product_name,p.unit FROM sales_order_details d JOIN products p ON p.id=d.product_id WHERE d.sales_order_id=? ORDER BY d.id");
-        $q->execute([$id]);
-        $r['details'] = $q->fetchAll();
-        return $r;
+        }
+        $details = $this->pdo->prepare('SELECT d.*, p.code product_code, p.name product_name, p.unit
+            FROM sales_order_details d JOIN products p ON p.id = d.product_id WHERE d.sales_order_id = ? ORDER BY d.id');
+        $details->execute([$id]);
+        $order['details'] = $details->fetchAll();
+        return $order;
     }
-    public function create(array $d, array $details): int
+
+    public function create(array $data, array $details, int $createdBy): int
     {
         $this->pdo->beginTransaction();
         try {
-            $n = 'SO-'.date('Ymd-His');
-            $s = $this->pdo->prepare('INSERT INTO sales_orders(so_number,customer_id,warehouse_id,so_date,status,notes,total_amount) VALUES(?,?,?,?,?,?,0)');
-            $s->execute([$n,$d['customer_id'],$d['warehouse_id'],$d['so_date'],$d['status'],$d['notes']]);
-            $id = (int)$this->pdo->lastInsertId();
-            $total = 0;
-            foreach ($details as $x) {
-                $sub = $x['qty'] * $x['price'];
-                $this->pdo->prepare('INSERT INTO sales_order_details(sales_order_id,product_id,qty,price,subtotal) VALUES(?,?,?,?,?)')->execute([$id,$x['product_id'],$x['qty'],$x['price'],$sub]);
-                $total += $sub;
+            $number = 'SO-' . date('Ymd-His') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $statement = $this->pdo->prepare('INSERT INTO sales_orders(so_number,customer_id,created_by,warehouse_id,so_date,status,notes,total_amount) VALUES(?,?,?,?,?,?,?,0)');
+            $statement->execute([$number, $data['customer_id'], $createdBy, $data['warehouse_id'], $data['so_date'], 'Draft', $data['notes']]);
+            $id = (int) $this->pdo->lastInsertId();
+            $total = 0.0;
+            foreach ($details as $item) {
+                $subtotal = $item['qty'] * $item['price'];
+                $this->pdo->prepare('INSERT INTO sales_order_details(sales_order_id,product_id,qty,price,subtotal) VALUES(?,?,?,?,?)')->execute([$id, $item['product_id'], $item['qty'], $item['price'], $subtotal]);
+                $total += $subtotal;
             }
-        $this->pdo->prepare('UPDATE sales_orders SET total_amount=? WHERE id=?')->execute([$total,$id]);
-            if ($d['status'] === 'Completed') {
-                $this->ensureEnough(['id' => $id,'warehouse_id' => $d['warehouse_id']]);
-                $this->applyStock($id, 'OUT', $n);
-            }$this->pdo->commit();
-            return $id;
-        }
-        catch (\Throwable $e) {
-            $this->pdo->rollBack();
-            throw $e;
-        }
-    }
-    public function setStatus(int $id, string $status): void
-    {
-        $r = $this->find($id);
-        if (!$r) {
-            throw new \DomainException('SO tidak ditemukan');
-        }
-        if ($r['status'] === 'Completed' && $status !== 'Completed') {
-            throw new \DomainException('SO yang sudah selesai tidak dapat dibatalkan.');
-        }$this->pdo->beginTransaction();
-        try {
-            if ($status === 'Completed' && $r['status'] !== 'Completed') {
-                $this->ensureEnough($r);
-                $this->applyStock($id, 'OUT', $r['so_number']);
-            }$this->pdo->prepare('UPDATE sales_orders SET status=? WHERE id=?')->execute([$status,$id]);
+            $this->pdo->prepare('UPDATE sales_orders SET total_amount = ? WHERE id = ?')->execute([$total, $id]);
             $this->pdo->commit();
-        }
-        catch (\Throwable $e) {
+            return $id;
+        } catch (\Throwable $error) {
             $this->pdo->rollBack();
-            throw $e;
+            throw $error;
         }
     }
-    private function ensureEnough(array $r): void
+
+    public function transition(int $id, string $target, int $actorId, string $role): void
     {
-        $q = $this->pdo->prepare('SELECT d.product_id,p.name,SUM(d.qty) qty,COALESCE(s.current_stock,0) current_stock FROM sales_order_details d JOIN products p ON p.id=d.product_id LEFT JOIN stocks s ON s.product_id=d.product_id AND s.warehouse_id=? WHERE d.sales_order_id=? GROUP BY d.product_id,p.name,s.current_stock');
-        $q->execute([$r['warehouse_id'],$r['id']]);
-        foreach ($q->fetchAll() as $x) {
-            if ((float)$x['current_stock'] < (float)$x['qty']) {
-                throw new \DomainException('Stok '. $x['name'] .' tidak cukup. Stok tersedia: '.rtrim(rtrim(number_format((float)$x['current_stock'], 2, '.', ''), '0'), '.').'.');
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->lock($id);
+            if (!$order) {
+                throw new \DomainException('Sales Order tidak ditemukan.');
             }
+            $current = $order['status'];
+            if ($target === 'PendingApproval' && $role === 'Sales' && (int) $order['created_by'] === $actorId && $current === 'Draft') {
+                $this->pdo->prepare("UPDATE sales_orders SET status = 'PendingApproval' WHERE id = ?")->execute([$id]);
+            } elseif ($target === 'Approved' && $role === 'Admin' && $current === 'PendingApproval') {
+                $this->pdo->prepare("UPDATE sales_orders SET status = 'Approved', approved_by = ? WHERE id = ?")->execute([$actorId, $id]);
+            } elseif ($target === 'Cancelled' && (($role === 'Sales' && (int) $order['created_by'] === $actorId && $current === 'Draft') || ($role === 'Admin' && in_array($current, ['Draft', 'PendingApproval', 'Approved'], true)))) {
+                $this->pdo->prepare("UPDATE sales_orders SET status = 'Cancelled' WHERE id = ?")->execute([$id]);
+            } elseif ($target === 'Fulfilled' && $role === 'WarehouseStaff' && $current === 'Approved') {
+                $this->issueStock($order, $actorId);
+                $this->pdo->prepare("UPDATE sales_orders SET status = 'Fulfilled' WHERE id = ?")->execute([$id]);
+            } else {
+                throw new \DomainException('Transisi status tidak diizinkan untuk peran ini.');
+            }
+            $this->pdo->commit();
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
         }
     }
-    private function applyStock(int $id, string $type, string $number): void
+
+    private function lock(int $id): ?array
     {
-        $r = $this->find($id);
-        $q = $this->pdo->prepare('SELECT * FROM sales_order_details WHERE sales_order_id=?');
-        $q->execute([$id]);
-        foreach ($q->fetchAll() as $d) {
-            $this->pdo->prepare('INSERT INTO stocks(product_id,warehouse_id,stock_in,stock_out,current_stock,updated_at) VALUES(?,?,0,?, -?,NOW()) ON DUPLICATE KEY UPDATE stock_out=stock_out+VALUES(stock_out),current_stock=current_stock-VALUES(stock_out),updated_at=NOW()')->execute([$d['product_id'],$r['warehouse_id'],$d['qty'],$d['qty']]);
-            $this->pdo->prepare('INSERT INTO stock_movements(transaction_type,transaction_id,transaction_number,product_id,warehouse_id,qty,movement_date) VALUES(?,?,?,?,?,?,NOW())')->execute([$type,$id,$number,$d['product_id'],$r['warehouse_id'],$d['qty']]);
+        $statement = $this->pdo->prepare('SELECT * FROM sales_orders WHERE id = ? FOR UPDATE');
+        $statement->execute([$id]);
+        return $statement->fetch() ?: null;
+    }
+
+    private function issueStock(array $order, int $actorId): void
+    {
+        $details = $this->pdo->prepare('SELECT d.*, p.name FROM sales_order_details d JOIN products p ON p.id = d.product_id WHERE d.sales_order_id = ?');
+        $details->execute([$order['id']]);
+        foreach ($details->fetchAll() as $detail) {
+            $stock = $this->pdo->prepare('SELECT id, current_stock FROM stocks WHERE product_id = ? AND warehouse_id = ? FOR UPDATE');
+            $stock->execute([$detail['product_id'], $order['warehouse_id']]);
+            $row = $stock->fetch();
+            if (!$row || (float) $row['current_stock'] < (float) $detail['qty']) {
+                throw new \DomainException('Stok ' . $detail['name'] . ' tidak mencukupi.');
+            }
+            $this->pdo->prepare('UPDATE stocks SET stock_out = stock_out + ?, current_stock = current_stock - ? WHERE id = ?')->execute([$detail['qty'], $detail['qty'], $row['id']]);
+            $this->pdo->prepare('INSERT INTO stock_movements(transaction_type,transaction_id,transaction_number,product_id,warehouse_id,qty,created_by,movement_date) VALUES(?,?,?,?,?,?,?,NOW())')->execute([StockMovementType::Issue->value, $order['id'], $order['so_number'], $detail['product_id'], $order['warehouse_id'], $detail['qty'], $actorId]);
         }
     }
 }

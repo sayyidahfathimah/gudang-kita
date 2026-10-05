@@ -9,3 +9,22 @@
 .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.report-grid .card:first-child{grid-column:1/-1}@media(max-width:900px){.report-grid{grid-template-columns:1fr}.report-grid .card:first-child{grid-column:auto}}
 html,body{max-width:100%;overflow-x:hidden}.app-wrapper{max-width:100%;overflow-x:hidden}.main-content{width:calc(100vw - 260px);overflow-x:hidden}.content,.card,.table-wrap{min-width:0;max-width:100%;overflow-x:hidden}table{min-width:0;table-layout:fixed}th,td{overflow-wrap:anywhere;word-break:break-word}@media(max-width:800px){.main-content{margin-left:0;width:100%}.content{padding:14px}th,td{padding:10px 7px;font-size:12px}.actions{gap:3px}.btn-sm{padding:5px 7px}}
 .dashboard-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px}.dashboard-intro .muted{margin:0}.service-status{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;color:var(--muted);font-size:12px}.service-dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}.service-dot.is-ready{background:var(--success)}.service-dot.is-error{background:var(--danger)}.service-dot.is-pending{background:#c89840}.dashboard-grid-single{grid-template-columns:minmax(0,1fr)}.row-overdue td{background:#fff4f4}@media(max-width:600px){.dashboard-intro{align-items:flex-start;flex-direction:column}.desktop-only{display:none}.dashboard-grid .card{min-width:0}.card-header{padding:16px}.service-status{white-space:normal}}
+
+/* Login account controls: preserve the pink application theme. */
+.login-card-expanded{width:min(520px,calc(100% - 30px))}.password-field{position:relative;display:block;width:100%}.password-field input{width:100%;padding-right:132px}.password-toggle{position:absolute;top:0;right:0;width:118px;height:100%;border:1px solid var(--primary);border-radius:8px;background:var(--primary);color:#fff;font-weight:700}.password-toggle:hover{background:var(--primary-dark)}.demo-accounts{border-top:1px solid var(--line);margin-top:24px;padding-top:16px}.demo-accounts>p{margin:0 0 10px;color:var(--muted)}.demo-account{display:grid;grid-template-columns:88px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f3e8ec}.demo-account:last-child{border-bottom:0}.demo-account strong{color:var(--primary-dark)}.demo-credentials{display:flex;flex-direction:column;gap:2px}.demo-credentials small{color:var(--muted)}.demo-account .btn{min-width:74px}@media(max-width:480px){.password-field input{padding-right:94px}.password-toggle{width:82px;font-size:13px}.demo-account{grid-template-columns:70px minmax(0,1fr) auto;gap:8px}.demo-account .btn{min-width:62px;padding:6px 8px}}
+.product-image-preview{display:block;max-width:220px;max-height:220px;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px;margin-top:8px}
+
+/* Keep the login grid inside a 360px viewport; grid items otherwise retain min-content width. */
+.login-page{grid-template-columns:minmax(0,1fr);padding:15px}
+.login-card,.login-card-expanded{width:min(520px,100%);min-width:0;max-width:100%}
+.login-card form,.login-card label,.password-field{min-width:0}
+
+/* Dense data tables stay readable on phones and can be swiped horizontally. */
+.table-wrap{overflow-x:auto;overflow-y:hidden}
+.table-wrap table{min-width:760px;table-layout:auto}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:minmax(0,1fr)}
+  .stat-card{min-width:0}
+  .stat-card strong{overflow-wrap:anywhere}
+  .table-wrap::before{content:"Geser tabel ke samping untuk melihat kolom lain →";display:block;position:sticky;left:0;max-width:100%;padding:8px 12px;color:var(--muted);font-size:12px;background:#fff}
+}

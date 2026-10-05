@@ -1,7 +1,7 @@
 # Scope
 
 ## In Scope
-Authentication, user management, project management, task management, assignment, status update, dashboard, search/filter/sort/pagination, validation, security, Docker, PHPUnit, documentation.
+Authentication, tiga role, master inventory, Purchase Order, Sales Order, penerimaan sebagian, approval, goods issue, stock movement, laporan CSV, API availability, dashboard, search/filter/pagination, validation, security, Docker, PHPUnit, SonarQube, observability, Kubernetes/Helm manifest, dan dokumentasi.
 
 ## Out of Scope
-Microservices, separate REST API, cloud deployment, CI/CD, Kubernetes, real-time notification, mobile application, automated E2E testing.
+Microservices, cloud production deployment, real-time notification, mobile application, dan automated browser E2E testing.

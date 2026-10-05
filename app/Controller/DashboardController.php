@@ -10,10 +10,24 @@ final class DashboardController extends BaseController
 {
     public function index(): void
     {
-        $isAdmin = in_array(Auth::role(), ['Admin','WarehouseStaff'], true);
-        $member = $isAdmin ? null : Auth::id();
+        $role = Auth::role();
+        $isAdmin = $role === 'Admin';
+        $isWarehouse = $role === 'WarehouseStaff';
+        $member = $role === 'Sales' ? Auth::id() : null;
         $r = new DashboardRepository($this->pdo);
         $inv = new InventoryRepository($this->pdo);
-        $this->view('dashboard/index', ['pageTitle' => 'Dashboard','summary' => $r->summary($member),'nearest' => $r->nearest($member),'isAdmin' => $isAdmin,'inventory' => $isAdmin ? $inv->summary() : [],'lowStock' => $isAdmin ? $inv->lowStock() : []]);
+        $this->view('dashboard/index', [
+            'pageTitle' => 'Dashboard',
+            'role' => $role,
+            'summary' => $isWarehouse ? [] : $r->summary($member),
+            'nearest' => $isWarehouse ? [] : $r->nearest($member),
+            'isAdmin' => $isAdmin,
+            'isWarehouse' => $isWarehouse,
+            'inventory' => ($isAdmin || $isWarehouse) ? $inv->summary() : [],
+            'lowStock' => ($isAdmin || $isWarehouse) ? $inv->lowStock() : [],
+            'salesOrders' => $role === 'Sales' ? $r->salesOrderCounts(Auth::id()) : [],
+            'orders' => $isAdmin ? $r->orderCounts() : [],
+            'queues' => $isWarehouse ? $r->warehouseQueues() : [],
+        ]);
     }
 }

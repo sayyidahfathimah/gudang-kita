@@ -25,8 +25,8 @@ final class TaskController extends BaseController
     public function index(): void
     {
         $f = ['search' => trim((string)($_GET['search'] ?? '')),'project_id' => (string)($_GET['project_id'] ?? ''),'status' => (string)($_GET['status'] ?? ''),'priority' => (string)($_GET['priority'] ?? ''),'sort' => (string)($_GET['sort'] ?? 'due_asc'),'page' => max(1, (int)($_GET['current_page'] ?? 1))];
-        $r = $this->repo->list($f, Auth::role() === 'Member' ? Auth::id() : null);
-        $projects = Auth::role() === 'Member' ? $this->projects->forMember(Auth::id()) : $this->projects->all();
+        $r = $this->repo->list($f, Auth::role() === 'Sales' ? Auth::id() : null);
+        $projects = Auth::role() === 'Sales' ? $this->projects->forSales(Auth::id()) : $this->projects->all();
         $this->view('tasks/index', ['pageTitle' => 'Tasks','result' => $r,'projects' => $projects,'filters' => $f]);
     }
     public function create(): void
@@ -44,8 +44,8 @@ final class TaskController extends BaseController
         if (!$p) {
             $e['project_id'] = 'Project tidak ditemukan.';
         }$u = $this->users->find((int)$d['assignee_id']);
-        if (!$u || $u['role'] !== 'Member') {
-            $e['assignee_id'] = 'Assignee harus merupakan Member yang valid.';
+        if (!$u || $u['role'] !== 'Sales') {
+            $e['assignee_id'] = 'Assignee harus merupakan Sales yang valid.';
         }
         if ($e) {
             $this->form('create', $d, $e);
@@ -74,8 +74,8 @@ final class TaskController extends BaseController
         if (!$p) {
             $e['project_id'] = 'Project tidak ditemukan.';
         }$u = $this->users->find((int)$d['assignee_id']);
-        if (!$u || $u['role'] !== 'Member') {
-            $e['assignee_id'] = 'Assignee harus merupakan Member yang valid.';
+        if (!$u || $u['role'] !== 'Sales') {
+            $e['assignee_id'] = 'Assignee harus merupakan Sales yang valid.';
         }
         if ($e) {
             $d['id'] = $id;
@@ -94,7 +94,7 @@ final class TaskController extends BaseController
             flash('error', 'Status tidak valid.');
             redirect('tasks');
         }
-        if (Auth::role() === 'Member') {
+        if (Auth::role() === 'Sales') {
             if (!$this->repo->updateStatus($id, Auth::id(), $status)) {
                 http_response_code(403);
                 require_once BASE_PATH.'/views/403.php';
@@ -127,7 +127,7 @@ final class TaskController extends BaseController
             require_once BASE_PATH.self::NOT_FOUND_VIEW;
             return;
         }
-        if (Auth::role() === 'Member' && (int)$t['assignee_id'] !== Auth::id()) {
+        if (Auth::role() === 'Sales' && (int)$t['assignee_id'] !== Auth::id()) {
             http_response_code(403);
             require_once BASE_PATH.'/views/403.php';
             return;
@@ -135,7 +135,7 @@ final class TaskController extends BaseController
     }
     private function form(string $mode, ?array $task, array $errors = []): void
     {
-        $this->view('tasks/form', ['pageTitle' => $mode === 'create' ? 'Add Task' : 'Edit Task','mode' => $mode,'task' => $task ?: ['project_id' => '','title' => '','description' => '','assignee_id' => '','status' => self::TO_DO,'priority' => 'Medium','due_date' => ''],'projects' => $this->projects->all(),'members' => array_values(array_filter($this->users->all(), fn ($u) => $u['role'] === 'Member')),'errors' => $errors]);
+        $this->view('tasks/form', ['pageTitle' => $mode === 'create' ? 'Add Task' : 'Edit Task','mode' => $mode,'task' => $task ?: ['project_id' => '','title' => '','description' => '','assignee_id' => '','status' => self::TO_DO,'priority' => 'Medium','due_date' => ''],'projects' => $this->projects->all(),'members' => array_values(array_filter($this->users->all(), fn ($u) => $u['role'] === 'Sales')),'errors' => $errors]);
     }
     private function data(): array
     {

@@ -2,3 +2,4 @@ RewriteEngine On
 RewriteRule ^health/(live|ready|startup)$ health.php?check=$1 [L,QSA]
 RewriteRule ^metrics$ metrics.php [L,QSA]
 RewriteRule ^alertmanager$ alertmanager.php [L,QSA]
+RewriteRule ^api/products/([^/]+)/availability$ index.php?page=api&action=availability&sku=$1 [L,QSA]

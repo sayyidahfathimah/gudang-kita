@@ -7,5 +7,7 @@ inventory_db_backup.sql
 docker-compose.yml.backup
 backups/
 .scannerwork/
+public/uploads/products/*
+!public/uploads/products/.gitkeep
 
 build/

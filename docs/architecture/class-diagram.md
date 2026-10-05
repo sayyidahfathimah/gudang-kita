@@ -1,35 +1,49 @@
-# Class Diagram
+# Class Diagram As-Built — Gudang Kita
+
+Diagram ini mengikuti kelas yang tersedia pada kode saat ini. Panah `..|>` berarti implementasi interface; panah `-->` berarti penggunaan kelas konkret; panah `..>` menunjukkan Service menerima kontrak melalui constructor.
 
 ```mermaid
 classDiagram
-    class Auth { +login(user) +logout() +requireAdmin() +requireWarehouseAccess() }
-    class BaseController { #view(view,data) #csrf() }
-    class PurchaseOrderController
     class SalesOrderController
-    class InventoryController
-    class ProjectController
-    class TaskController
-    class PurchaseOrderRepository { +create() +setStatus() -applyStock() }
-    class SalesOrderRepository { +create() +setStatus() -ensureEnough() -applyStock() }
-    class InventoryRepository { +stockRows() +movements() }
-    class ProjectRepository
-    class TaskRepository
+    class PurchaseOrderController
+    class ReportController
+    class SalesOrderService
+    class PurchaseOrderService
+    class ReportAccessPolicy
+    class SalesOrderRepositoryInterface { <<interface>> }
+    class PurchaseOrderRepositoryInterface { <<interface>> }
+    class PurchaseOrderWorkflowRepositoryInterface { <<interface>> }
+    class SalesOrderRepository
+    class PurchaseOrderRepository
+    class ReportRepository
+    class InventoryRepository
+    class InMemorySalesOrderRepository
+    class InMemoryPurchaseOrderRepository
+    class StockMovementType { <<enumeration>> }
     class PDO
 
-    BaseController <|-- PurchaseOrderController
-    BaseController <|-- SalesOrderController
-    BaseController <|-- InventoryController
-    BaseController <|-- ProjectController
-    BaseController <|-- TaskController
-    PurchaseOrderController --> PurchaseOrderRepository
-    SalesOrderController --> SalesOrderRepository
-    InventoryController --> InventoryRepository
-    ProjectController --> ProjectRepository
-    TaskController --> TaskRepository
-    PurchaseOrderRepository --> PDO
+    SalesOrderController --> SalesOrderService : concrete
+    SalesOrderController --> SalesOrderRepository : concrete
+    SalesOrderController --> InventoryRepository : concrete
+    PurchaseOrderController --> PurchaseOrderService : concrete
+    PurchaseOrderController --> PurchaseOrderRepository : concrete
+    PurchaseOrderController --> InventoryRepository : concrete
+    ReportController --> ReportAccessPolicy : concrete
+    ReportController --> ReportRepository : concrete
+    SalesOrderService ..> SalesOrderRepositoryInterface : constructor interface
+    PurchaseOrderService ..> PurchaseOrderRepositoryInterface : constructor interface
+    PurchaseOrderWorkflowRepositoryInterface --|> PurchaseOrderRepositoryInterface
+    SalesOrderRepository ..|> SalesOrderRepositoryInterface
+    PurchaseOrderRepository ..|> PurchaseOrderWorkflowRepositoryInterface
+    InMemorySalesOrderRepository ..|> SalesOrderRepositoryInterface : unit fake
+    InMemoryPurchaseOrderRepository ..|> PurchaseOrderRepositoryInterface : unit fake
+    SalesOrderRepository --> StockMovementType
+    PurchaseOrderRepository --> StockMovementType
     SalesOrderRepository --> PDO
-    InventoryRepository --> PDO
-    Auth <-- BaseController
+    PurchaseOrderRepository --> PDO
+    ReportRepository --> PDO
 ```
 
-Controller menerima request dan menentukan authorization. Repository menjalankan query serta transaksi database. View hanya merender data yang diterima dari controller.
+Service hanya mengetahui kontrak repository. Implementasi MySQL menyimpan perubahan order, stok, dan ledger di dalam transaksi; fake digunakan oleh unit test tanpa MySQL. Controller saat ini masih menerima atau membuat beberapa repository konkret karena composition root manual belum diterapkan secara menyeluruh.
+
+Diagram initial historis belum ditemukan. Karena itu, perubahan waktu antara diagram sebelum coding dan diagram as-built tidak dapat dibuktikan; [catatan diagram awal](../planning/class-diagram-initial.md) mencatat keterbatasan tersebut.

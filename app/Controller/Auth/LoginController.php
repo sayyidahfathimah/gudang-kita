@@ -23,11 +23,11 @@ final class LoginController extends BaseController
             flash('error', 'Sesi form tidak valid. Silakan coba lagi.');
             redirect('login');
         }
-        $u = trim((string)($_POST['username'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
         $p = (string)($_POST['password'] ?? '');
-        $user = (new UserRepository($this->pdo))->findByUsername($u);
+        $user = (new UserRepository($this->pdo))->findByEmail($email);
         if (!$user || !(bool)$user['is_active'] || !Hash::verify($p, $user['password'])) {
-            flash('error', 'Username atau password tidak valid.');
+            flash('error', 'Email atau password tidak valid.');
             redirect('login');
         }
         Auth::login($user);

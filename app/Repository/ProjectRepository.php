@@ -34,7 +34,7 @@ final class ProjectRepository
         $s->execute($p);
         return $s->fetchAll();
     }
-    public function forMember(int $userId, array $filters = []): array
+    public function forSales(int $userId, array $filters = []): array
     {
         $where = ['t.assignee_id=?'];
         $p = [$userId];

@@ -20,8 +20,8 @@ final class ValidatorTest extends TestCase
     {
         self::assertTrue(Validator::email('user@example.test'));
         self::assertFalse(Validator::email('invalid-email'));
-        self::assertTrue(Validator::enum('Admin', ['Admin', 'Member']));
-        self::assertFalse(Validator::enum('Guest', ['Admin', 'Member']));
+        self::assertTrue(Validator::enum('Admin', ['Admin', 'Sales']));
+        self::assertFalse(Validator::enum('Guest', ['Admin', 'Sales']));
         self::assertTrue(Validator::dateOrder('2026-10-01', '2026-10-01'));
         self::assertFalse(Validator::dateOrder('2026-10-02', '2026-10-01'));
     }

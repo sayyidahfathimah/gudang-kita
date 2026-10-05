@@ -18,7 +18,7 @@ final class Auth
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $p = session_get_cookie_params();
-            setcookie(session_name(), ' ', time() - 42000, $p['path'], $p['domain'] ?? '', (bool)$p['secure'], (bool)$p['httponly']);
+            setcookie(session_name(), ' ', time() - 42000, $p['path'], $p['domain'], (bool)$p['secure'], (bool)$p['httponly']);
         }
         session_destroy();
     }
@@ -65,7 +65,7 @@ final class Auth
     public static function requireProjectAccess(): void
     {
         self::require();
-        if (!in_array(self::role(), ['Admin','Member'], true)) {
+        if (!in_array(self::role(), ['Admin','Sales'], true)) {
             http_response_code(403);
             require_once BASE_PATH.self::FORBIDDEN_VIEW;
             exit;

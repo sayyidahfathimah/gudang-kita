@@ -1,176 +1,103 @@
 # Dokumentasi Aplikasi — Gudang Kita
 
-## Gambaran aplikasi
+## Tujuan dan modul
 
-Gudang Kita adalah aplikasi web untuk pengelolaan persediaan dan aktivitas project. Aplikasi menyimpan data produk, transaksi pembelian dan penjualan, stok per gudang, serta project dan task dalam satu sistem.
+Gudang Kita mengelola produk, gudang, pembelian, penjualan, saldo stok per lokasi, serta project dan task. Perubahan stok dicatat sebagai riwayat pergerakan agar saldo dan sumbernya dapat diperiksa. Aplikasi juga menyediakan laporan CSV, endpoint ketersediaan produk, dan pemeriksaan stok rendah.
 
-Tujuannya adalah menyediakan data operasional terpusat, mencatat perubahan stok, mencegah stok bernilai minus, dan membantu pengelolaan pekerjaan member.
-
-## Modul aplikasi
-
-| Modul | Fungsi |
+| Peran | Tanggung jawab utama |
 | --- | --- |
-| Autentikasi | Login, logout, sesi, CSRF, dan password hash. |
-| Master Data | Produk, customer, supplier, gudang, serta pengguna. Kode master dibuat otomatis. |
-| Purchase Order | Pencatatan pembelian barang dari supplier. |
-| Sales Order | Pencatatan penjualan barang kepada customer. |
-| Inventory | Stok per produk-gudang, stok minimum, dan stock movement. |
-| Project dan Task | Project, task, prioritas, due date, status, dan overdue. |
-| Laporan | Ringkasan stok, purchase order, dan sales order. |
-| Operasional | Docker, Prometheus, Grafana, Alertmanager, SonarQube, Kubernetes, dan Helm. |
+| Admin | Mengelola master data dan user, menyetujui atau membatalkan SO, melihat seluruh laporan. |
+| Sales | Membuat dan mengajukan SO miliknya, melihat order dan laporan order miliknya, mengerjakan task yang ditugaskan. |
+| Warehouse Staff | Membuat PO, menerima barang, memenuhi SO yang disetujui, melihat stok dan ledger. |
 
-## Hak akses pengguna
+Login memakai email dan password yang di-hash. Pemeriksaan role berlaku di server; Sales tidak dapat menyetujui SO sendiri.
 
-| Role | Akses |
-| --- | --- |
-| Admin | Mengelola master data, transaksi, inventory, user, project, task, dan laporan. |
-| Member | Mengakses project dan task yang ditugaskan kepadanya serta memperbarui status task miliknya. |
+## Alur pembelian sampai stok masuk
 
-Member tidak memiliki akses ke master data, Purchase Order, Sales Order, dan pengaturan user.
-
-## Alur sistem
-
-```mermaid
-flowchart TD
-    A[Login] --> B{Role pengguna}
-    B -->|Admin| C[Dashboard Admin]
-    B -->|Member| D[Dashboard Member]
-    C --> E[Kelola master data]
-    E --> F[Purchase Order]
-    F --> G[Barang diterima]
-    G --> H[Stok masuk dan stock movement IN]
-    C --> I[Sales Order]
-    I --> J{Stok mencukupi?}
-    J -->|Ya| K[Order selesai]
-    K --> L[Stok keluar dan stock movement OUT]
-    J -->|Tidak| M[Order tidak dapat diselesaikan]
-    C --> N[Kelola project dan task]
-    D --> O[Melihat dan memperbarui task sendiri]
-```
-
-## Flowmap persediaan
+1. Admin atau Warehouse Staff membuat PO berisi supplier, gudang tujuan, produk, jumlah, dan harga. Status awalnya `Draft`; stok belum berubah.
+2. PO dikirim menjadi `Ordered`. Status ini juga belum mengubah stok.
+3. Saat barang diterima, petugas memasukkan jumlah aktual pada tiap item. Aplikasi menambah `received_qty`, `stocks.current_stock` dan `stocks.stock_in`, lalu menulis satu `stock_movements` bertipe `Receipt` per item yang diterima.
+4. Jika masih ada sisa barang yang belum datang, PO menjadi `PartiallyReceived`. Penerimaan berikutnya dapat dilakukan sampai status `Received`.
+5. Pembaruan item, stok, ledger, dan status berada dalam satu transaksi database. Jika satu langkah gagal, seluruh penerimaan dibatalkan.
 
 ```mermaid
 flowchart LR
-    ADM[Admin] --> MD[Master Data]
-    ADM --> PO[Purchase Order]
-    SUP[Supplier] --> PO
-    PO -->|Status Received| STK[(Stocks)]
-    PO -->|IN| MOV[(Stock Movements)]
-    ADM --> SO[Sales Order]
-    CUS[Customer] --> SO
-    STK -->|Validasi stok| SO
-    SO -->|Status Completed| STK
-    SO -->|OUT| MOV
-    STK --> RPT[Laporan]
-    MOV --> RPT
+    A[Admin / Warehouse Staff] --> B[PO Draft]
+    B --> C[PO Ordered]
+    C --> D[Penerimaan barang]
+    D --> E{Semua item diterima?}
+    E -->|Belum| F[PartiallyReceived]
+    F --> D
+    E -->|Ya| G[Received]
+    D --> H[Stok bertambah + ledger Receipt]
 ```
 
-## Proses Purchase Order hingga Sales Order selesai
+## Alur penjualan sampai stok keluar
 
-1. Admin memilih supplier, gudang, produk, kuantitas, dan harga pada Purchase Order.
-2. PO dapat disimpan sebagai `Draft` atau `Approved`; stok belum berubah.
-3. Saat barang diterima, Admin mengubah status PO menjadi `Received`.
-4. Sistem menambah `stock_in` dan `current_stock`, lalu membuat stock movement `IN` untuk setiap produk.
-5. Admin membuat Sales Order dengan customer, gudang, dan detail produk.
-6. Sistem memeriksa `current_stock` sebelum SO diselesaikan.
-7. Saat SO berubah menjadi `Completed`, sistem menambah `stock_out`, mengurangi `current_stock`, dan membuat stock movement `OUT`.
-8. Apabila stok tidak mencukupi, SO tidak dapat diselesaikan sehingga stok tidak negatif.
+1. Sales membuat SO untuk customer dan gudang asal. Status awal `Draft`; stok belum berubah.
+2. Sales mengajukan SO menjadi `PendingApproval`. Admin menyetujui menjadi `Approved` atau membatalkannya. Pemeriksaan peran dilakukan pada server.
+3. Warehouse Staff memproses SO `Approved`. Aplikasi mengunci baris stok produk-gudang dan memeriksa jumlah tersedia.
+4. Jika stok mencukupi, aplikasi menambah `stocks.stock_out`, mengurangi `stocks.current_stock`, mencatat movement `Issue`, dan mengubah SO menjadi `Fulfilled` dalam satu transaksi.
+5. Jika stok kurang, transaksi dibatalkan: SO tetap `Approved`, saldo tidak berkurang, dan movement `Issue` tidak dibuat.
 
 ```mermaid
-flowchart TD
-    A[Admin membuat PO] --> B[Draft atau Approved]
-    B --> C[Barang diterima]
-    C --> D[PO Received]
-    D --> E[Stock movement IN]
-    E --> F[Current stock bertambah]
-    F --> G[Admin membuat SO]
-    G --> H{Stok mencukupi?}
-    H -->|Tidak| I[SO ditahan]
-    H -->|Ya| J[SO Completed]
-    J --> K[Stock movement OUT]
-    K --> L[Current stock berkurang]
+flowchart LR
+    A[Sales] --> B[SO Draft]
+    B --> C[PendingApproval]
+    C --> D{Admin menyetujui?}
+    D -->|Ya| E[Approved]
+    D -->|Tidak| X[Cancelled]
+    E --> F{Warehouse: stok cukup?}
+    F -->|Ya| G[Fulfilled + stok berkurang + ledger Issue]
+    F -->|Tidak| H[Tetap Approved; tidak ada perubahan stok]
 ```
 
-## Proses kerja Member
+## Stok dan riwayat pergerakan
 
-1. Member login ke aplikasi.
-2. Dashboard Member menampilkan project dan task yang ditugaskan kepadanya.
-3. Member membuka task dan memperbarui status dari `To Do` ke `In Progress` lalu `Done`.
-4. Dashboard memperbarui ringkasan jumlah task berdasarkan status terbaru.
+`stocks` menyimpan satu saldo untuk setiap pasangan produk-gudang. `stock_movements` menyimpan tanggal, produk, gudang, jumlah, tipe, nomor referensi, dan aktor jika diketahui.
 
-```mermaid
-flowchart TD
-    A[Member login] --> B[Dashboard Member]
-    B --> C[Project dan task yang ditugaskan]
-    C --> D[Task To Do]
-    D --> E[Ubah menjadi In Progress]
-    E --> F[Task dikerjakan]
-    F --> G[Ubah menjadi Done]
-    G --> H[Ringkasan task diperbarui]
-```
+| Tipe | Kapan dibuat | Pengaruh pada saldo |
+| --- | --- | --- |
+| `Receipt` | Penerimaan PO, termasuk sebagian | Bertambah |
+| `Issue` | SO berhasil dipenuhi | Berkurang |
+| `Adjustment` | Rekonsiliasi saldo awal data lama | Bertambah atau berkurang menurut `adjustment_direction` |
 
-## Stock movement
+Database aktif berasal dari data sebelum ledger lengkap diterapkan. Pada 5 Oktober 2026, selisih antara saldo saat itu dan movement historis yang tersisa dicatat sebagai `Adjustment` berlabel `LEGACY-BASE-*`. Entri ini adalah **saldo awal rekonsiliasi**, bukan PO/SO yang dibuat belakangan. Saldo dan order lama tidak diubah; rincian transaksi serta aktor historis yang hilang tetap tidak dapat dipulihkan. Counter lama `stock_in`/`stock_out` tidak boleh dianggap sama persis dengan jumlah baris Receipt/Issue yang masih tersedia.
 
-Stock movement adalah histori setiap perubahan persediaan. Data ini menyimpan jenis transaksi, nomor transaksi, produk, gudang, kuantitas, dan waktu perubahan.
+Setelah rekonsiliasi, saldo setiap pasangan produk-gudang cocok dengan penjumlahan ledger bersih: `Receipt − Issue + Adjustment Masuk − Adjustment Keluar`. Untuk transaksi baru, aktor penerimaan/pengeluaran dicatat saat operasi dijalankan.
 
-| Sumber transaksi | Status | Tipe movement | Perubahan stok |
-| --- | --- | --- | --- |
-| Purchase Order | `Received` | `IN` | Stok masuk dan saldo stok bertambah. |
-| Sales Order | `Completed` | `OUT` | Stok keluar dan saldo stok berkurang. |
-| Draft, Approved, Confirmed | Belum final | Tidak dibuat | Saldo stok tidak berubah. |
-
-## ERD
+## ERD ringkas
 
 ```mermaid
 erDiagram
-    USERS ||--o{ TASKS : assignee_id
-    PROJECTS ||--o{ TASKS : project_id
-    SUPPLIERS ||--o{ PURCHASE_ORDERS : supplier_id
-    WAREHOUSES ||--o{ PURCHASE_ORDERS : warehouse_id
-    PURCHASE_ORDERS ||--|{ PURCHASE_ORDER_DETAILS : purchase_order_id
-    PRODUCTS ||--o{ PURCHASE_ORDER_DETAILS : product_id
-    CUSTOMERS ||--o{ SALES_ORDERS : customer_id
-    WAREHOUSES ||--o{ SALES_ORDERS : warehouse_id
-    SALES_ORDERS ||--|{ SALES_ORDER_DETAILS : sales_order_id
-    PRODUCTS ||--o{ SALES_ORDER_DETAILS : product_id
-    PRODUCTS ||--o{ STOCKS : product_id
-    WAREHOUSES ||--o{ STOCKS : warehouse_id
-    PRODUCTS ||--o{ STOCK_MOVEMENTS : product_id
-    WAREHOUSES ||--o{ STOCK_MOVEMENTS : warehouse_id
+    USERS ||--o{ SALES_ORDERS : membuat
+    USERS ||--o{ SALES_ORDERS : menyetujui
+    USERS ||--o{ STOCK_MOVEMENTS : melakukan
+    USERS ||--o{ TASKS : ditugaskan
+    PROJECTS ||--o{ TASKS : memiliki
+    CATEGORIES ||--o{ PRODUCTS : mengelompokkan
+    SUPPLIERS ||--o{ PURCHASE_ORDERS : pemasok
+    CUSTOMERS ||--o{ SALES_ORDERS : pelanggan
+    WAREHOUSES ||--o{ PURCHASE_ORDERS : tujuan
+    WAREHOUSES ||--o{ SALES_ORDERS : asal
+    PURCHASE_ORDERS ||--|{ PURCHASE_ORDER_DETAILS : memiliki
+    SALES_ORDERS ||--|{ SALES_ORDER_DETAILS : memiliki
+    PRODUCTS ||--o{ PURCHASE_ORDER_DETAILS : dibeli
+    PRODUCTS ||--o{ SALES_ORDER_DETAILS : dijual
+    PRODUCTS ||--o{ STOCKS : memiliki
+    WAREHOUSES ||--o{ STOCKS : menyimpan
+    PRODUCTS ||--o{ STOCK_MOVEMENTS : bergerak
+    WAREHOUSES ||--o{ STOCK_MOVEMENTS : lokasi
 ```
 
-- Satu project memiliki banyak task; satu user dapat menjadi assignee banyak task.
-- Satu Purchase Order dan Sales Order memiliki banyak baris detail produk.
-- Stok disimpan berdasarkan pasangan produk dan gudang.
-- Stock movement mencatat barang masuk dan keluar per produk serta gudang.
-- Constraint `current_stock >= 0` menjaga saldo stok tetap valid.
+`stocks` memiliki unique key `(product_id, warehouse_id)` dan constraint saldo tidak negatif. Satu order dapat mempunyai banyak item. Movement memakai `transaction_type` dan `transaction_id` sebagai referensi PO/SO; saldo awal rekonsiliasi memakai `transaction_id = 0` dan nomor `LEGACY-BASE-*` agar tidak disalahartikan sebagai order.
 
-## Arsitektur aplikasi
+## Fitur pendukung dan operasional
 
-```mermaid
-flowchart LR
-    U[Browser] --> APP[PHP 8.2 App<br/>Container port 8080]
-    APP --> DB[(MySQL 8<br/>Docker volume)]
-    PRO[Prometheus] -->|Scrape /metrics| APP
-    GRA[Grafana] --> PRO
-    PRO --> ALT[Alertmanager]
-    K8S[Kubernetes dan Helm] --> APP
-```
+- Laporan stok, status order, dan ledger dapat diekspor sebagai CSV sesuai hak akses peran.
+- Endpoint `GET /api/products/{sku}/availability` mengembalikan JSON stok per gudang dengan pemeriksaan autentikasi.
+- Script `scripts/check-low-stock.php` menampilkan produk di bawah batas minimum.
+- Docker Compose menjalankan aplikasi PHP dan MySQL; Prometheus, Grafana, dan Alertmanager tersedia melalui konfigurasi observability terpisah.
+- Diagram kelas dan keputusan arsitektur tersedia pada [docs/architecture](architecture/); hasil pemeriksaan brief ada di [audit kepatuhan](planning/project-brief-compliance.md).
 
-Aplikasi dijalankan dengan Docker Compose. Service aplikasi memakai PHP 8.2, service database memakai MySQL 8, dan data database disimpan pada Docker volume. Endpoint health dan metrics digunakan untuk memantau aplikasi serta koneksi database.
-
-## Keamanan dan konfigurasi
-
-- Password pengguna disimpan menggunakan hash.
-- Form penting menggunakan token CSRF.
-- Akses menu dan aksi dibatasi sesuai role pengguna.
-- Query database menggunakan PDO prepared statement.
-- Konfigurasi lokal dan secret disimpan di `.env`.
-- Repository hanya menyimpan `.env.example` sebagai contoh konfigurasi.
-
-## Struktur teknis
-
-Arsitektur menerapkan pemisahan controller, repository, view, validation, dan security. Diagram class tersedia pada [class-diagram.md](architecture/class-diagram.md). Catatan perubahan teknis tersedia pada [refactoring-log.md](planning/refactoring-log.md).
-
-Endpoint `health/ready` mengembalikan JSON dan dipanggil menggunakan Fetch API untuk menampilkan status aplikasi serta database pada dashboard.
+Pada database latihan aktif, PO nomor internal `52` berstatus `PartiallyReceived` dan SO nomor internal `34` berstatus `PendingApproval`. Nomor dapat berbeda pada instalasi baru. Data contoh dibuat melalui service aplikasi sehingga relasi item, stok, dan ledger mengikuti aturan yang sama dengan permintaan dari UI.

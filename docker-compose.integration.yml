@@ -1,0 +1,36 @@
+services:
+  integration-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: inventory_db
+      MYSQL_USER: integration_user
+      MYSQL_PASSWORD: integration_password
+      MYSQL_ROOT_PASSWORD: integration_root_password
+    volumes:
+      - ./database/schema-and-seed.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uintegration_user", "-pintegration_password"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  integration-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      DB_HOST: integration-db
+      DB_PORT: 3306
+      DB_DATABASE: inventory_db
+      DB_USERNAME: integration_user
+      DB_PASSWORD: integration_password
+    depends_on:
+      integration-db:
+        condition: service_healthy
+    command:
+      - sh
+      - -lc
+      - >-
+        until php -r 'try { new PDO("mysql:host=integration-db;port=3306;dbname=inventory_db", "integration_user", "integration_password"); } catch (Throwable) { exit(1); }';
+        do sleep 1; done;
+        vendor/bin/phpunit --testsuite DatabaseIntegration

@@ -1,0 +1,35 @@
+# Isolated HTTP verification. Never mount the application's db_data volume here.
+services:
+  acceptance-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: inventory_db
+      MYSQL_USER: acceptance_user
+      MYSQL_PASSWORD: acceptance_password
+      MYSQL_ROOT_PASSWORD: acceptance_root_password
+    volumes:
+      - ./database/schema-and-seed.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uacceptance_user", "-pacceptance_password"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  acceptance-app:
+    build: .
+    environment:
+      DB_HOST: acceptance-db
+      DB_PORT: 3306
+      DB_DATABASE: inventory_db
+      DB_USERNAME: acceptance_user
+      DB_PASSWORD: acceptance_password
+      APP_DEBUG: "false"
+    ports:
+      - "127.0.0.1:18081:8080"
+    depends_on:
+      acceptance-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit((int)!@file_get_contents('http://127.0.0.1:8080/health/ready'));"]
+      interval: 3s
+      timeout: 5s
+      retries: 40

@@ -8,5 +8,6 @@
  <testsuites>
   <testsuite name="Unit"><directory>tests/Unit</directory></testsuite>
   <testsuite name="Integration"><directory>tests/Integration</directory></testsuite>
+  <testsuite name="DatabaseIntegration"><directory>tests/DatabaseIntegration</directory></testsuite>
  </testsuites>
 </phpunit>

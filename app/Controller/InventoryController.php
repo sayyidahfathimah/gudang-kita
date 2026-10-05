@@ -20,6 +20,17 @@ final class InventoryController extends BaseController
         $result = paginate($this->repo->stockRows($f), (int)($_GET['current_page'] ?? 1));
         $this->view('inventory/stock', ['pageTitle' => 'Stok','result' => $result,'warehouses' => $this->repo->warehouses(),'filters' => $f]);
     }
+    public function product(int $id): void
+    {
+        Auth::requireWarehouseAccess();
+        $product = $this->repo->productStockBreakdown($id);
+        if (!$product) {
+            http_response_code(404);
+            require_once BASE_PATH.'/views/404.php';
+            return;
+        }
+        $this->view('inventory/product', ['pageTitle' => 'Stok Produk', 'product' => $product]);
+    }
     public function movements(): void
     {
         Auth::requireWarehouseAccess();

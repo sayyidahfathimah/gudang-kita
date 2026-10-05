@@ -30,4 +30,11 @@ abstract class BaseController
             exit;
         }
     }
+
+    protected function errorMessage(\Throwable $error, string $fallback): string
+    {
+        return $error instanceof \DomainException || $error instanceof \InvalidArgumentException
+            ? $error->getMessage()
+            : $fallback;
+    }
 }

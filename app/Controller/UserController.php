@@ -25,14 +25,14 @@ final class UserController extends BaseController
     public function create(): void
     {
         Auth::requireAdmin();
-        $this->view(self::FORM_VIEW, ['pageTitle' => self::ADD_TITLE,'mode' => 'create','user' => ['username' => '','name' => '','email' => '','role' => 'Member','is_active' => 1]]);
+        $this->view(self::FORM_VIEW, ['pageTitle' => self::ADD_TITLE,'mode' => 'create','user' => ['username' => '','name' => '','email' => '','role' => 'Sales','is_active' => 1]]);
     }
     public function store(): void
     {
         Auth::requireAdmin();
         $this->csrf();
         $d = $this->data();
-        $e = UserValidator::validate($d);
+        $e = array_merge(UserValidator::validate($d), $this->repo->identityErrors($d));
         if ($d['password'] === '') {
             $e['password'] = 'Password wajib diisi.';
         }
@@ -45,7 +45,7 @@ final class UserController extends BaseController
             redirect('users');
         }
         catch (\PDOException $x) {
-            $this->view(self::FORM_VIEW, ['pageTitle' => self::ADD_TITLE,'mode' => 'create','user' => $d,'errors' => ['username' => 'Username harus unik.']]);
+            $this->view(self::FORM_VIEW, ['pageTitle' => self::ADD_TITLE,'mode' => 'create','user' => $d,'errors' => ['form' => 'Data tidak dapat disimpan. Pastikan username dan email belum digunakan.']]);
         }
     }
     public function edit(int $id): void
@@ -62,8 +62,13 @@ final class UserController extends BaseController
     {
         Auth::requireAdmin();
         $this->csrf();
+        if (!$this->repo->find($id)) {
+            http_response_code(404);
+            require_once BASE_PATH.'/views/404.php';
+            return;
+        }
         $d = $this->data();
-        $e = UserValidator::validate($d);
+        $e = array_merge(UserValidator::validate($d), $this->repo->identityErrors($d, $id));
         if ($e) {
             $d['id'] = $id;
             $this->view(self::FORM_VIEW, ['pageTitle' => 'Edit User','mode' => 'edit','user' => $d,'errors' => $e]);
@@ -74,8 +79,8 @@ final class UserController extends BaseController
             redirect('users');
         }
         catch (\PDOException $x) {
-            flash('error', 'Username sudah digunakan.');
-            redirect('users', ['action' => 'edit','id' => $id]);
+            $d['id'] = $id;
+            $this->view(self::FORM_VIEW, ['pageTitle' => 'Edit User','mode' => 'edit','user' => $d,'errors' => ['form' => 'Data tidak dapat disimpan. Pastikan username dan email belum digunakan.']]);
         }
     }
     public function delete(int $id): void
@@ -85,12 +90,15 @@ final class UserController extends BaseController
         if ($id === Auth::id()) {
             flash('error', 'Akun yang sedang digunakan tidak dapat dihapus.');
             redirect('users');
-        }$this->repo->delete($id);
-        flash('success', 'User berhasil dihapus.');
+        }
+        $deactivated = $this->repo->delete($id);
+        flash('success', $deactivated
+            ? 'User memiliki task terkait, jadi akunnya dinonaktifkan agar riwayat task tetap tersimpan.'
+            : 'User berhasil dihapus.');
         redirect('users');
     }
     private function data(): array
     {
-        return ['username' => trim((string)($_POST['username'] ?? '')),'name' => trim((string)($_POST['name'] ?? '')),'email' => trim((string)($_POST['email'] ?? '')),'role' => (string)($_POST['role'] ?? 'Member'),'is_active' => (int)($_POST['is_active'] ?? 0),'password' => (string)($_POST['password'] ?? '')];
+        return ['username' => trim((string)($_POST['username'] ?? '')),'name' => trim((string)($_POST['name'] ?? '')),'email' => trim((string)($_POST['email'] ?? '')),'role' => (string)($_POST['role'] ?? 'Sales'),'is_active' => (int)($_POST['is_active'] ?? 0),'password' => (string)($_POST['password'] ?? '')];
     }
 }

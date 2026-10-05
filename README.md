@@ -1,143 +1,121 @@
-# Gudang Kita — Inventory & Project Management System
+# Gudang Kita — Inventory Management System
 
-Final Project Training Junior Programmer 2026 — PT Neuronworks Indonesia.
+Final Project Training Intermediate Programmer 2026 — PT Neuronworks Indonesia.
 
-## Scope
-Gudang Kita menggabungkan **Inventory Management** dan **Project Activity & Task Management** dalam satu aplikasi.
+## Tujuan
 
-### Modul
-- **Dashboard**: ringkasan project, task, inventory, stok minimum, dan transaksi terbaru.
-- **Master Data**: Users, Produk, Customer, Supplier, Gudang.
-- **Transaksi**: Purchase Order dan Sales Order.
-- **Inventory**: Stok dan Stock Movement.
-- **Report**: laporan stok, purchase order, sales order, dan stock movement.
-- **Project Management**: Projects dan Tasks.
+Gudang Kita mengelola master persediaan, pembelian, penjualan, stok per gudang, dan riwayat pergerakan stok. Aplikasi mencegah stok minus saat barang dikeluarkan serta memisahkan tugas Sales, Admin, dan Petugas Gudang.
 
-### Role
-- **Admin**: manage users, master data, transaksi, inventory, project, dan task.
-- **Member**: akses project/task sesuai authorization yang tersedia.
+## Peran dan alur kerja
 
-## Technology
+| Peran | Tanggung jawab |
+| --- | --- |
+| **Sales** | Membuat dan mengajukan Sales Order miliknya; mengunduh laporan order miliknya. |
+| **Admin** | Mengelola master data dan pengguna, menyetujui atau menolak SO yang diajukan, serta melihat seluruh laporan. |
+| **Petugas Gudang** | Membuat PO, menerima barang, mengeluarkan barang dari SO yang disetujui, serta mengunduh laporan stok dan ledger. |
+
+```text
+PO Draft → Ordered → PartiallyReceived / Received → stok bertambah + Receipt
+SO Draft → PendingApproval → Approved → Fulfilled → stok berkurang + Issue
+```
+
+Penerimaan PO dapat dilakukan sebagian. Setiap penerimaan menambah `received_qty`, stok, dan satu riwayat `Receipt`. Saat seluruh detail telah diterima, status PO menjadi `Received`.
+
+Saat Petugas Gudang memenuhi SO, aplikasi mengunci baris stok dengan transaksi database, memastikan stok cukup, mengurangi stok, membuat movement `Issue`, lalu mengubah status menjadi `Fulfilled` dalam satu transaksi.
+
+Database latihan aktif yang berasal dari versi lama memiliki histori movement yang tidak lengkap. Selisih saldo awal dicatat sebagai movement `Adjustment` bernomor `LEGACY-BASE-*`, dengan arah masuk/keluar dan catatan asalnya. Saldo stok tidak diubah oleh rekonsiliasi; aktor dan detail transaksi historis yang tidak tersedia tetap tidak diisi. [Alur data dan ERD](docs/dokumentasi-summary.md) menjelaskan batas ini.
+
+## Modul
+
+- **Autentikasi**: login menggunakan email, password hash, session aman, dan CSRF.
+- **Master data**: kategori, produk, customer, supplier, gudang, dan pengguna.
+- **Purchase Order**: pembuatan, pemesanan, penerimaan sebagian/penuh.
+- **Sales Order**: draft, pengajuan, approval Admin, dan goods issue gudang.
+- **Inventory**: stok per produk-gudang, riwayat Stock Movement, batas stok minimum, filter stok rendah, dan gambar produk opsional.
+- **Laporan**: Admin melihat semua laporan; Sales melihat order miliknya; Petugas Gudang melihat stok dan ledger. Rentang tanggal berlaku untuk laporan order dan ledger. Saldo stok menampilkan kondisi saat ini.
+- **API JSON**: `GET /api/products/{sku}/availability` untuk melihat stok tersedia produk.
+- **Operasional**: Docker, healthcheck, Prometheus, Grafana, Alertmanager, SonarQube, Kubernetes/Helm manifest.
+
+## Teknologi
+
+- PHP 8.2 native OOP, PDO prepared statement, MySQL 8
 - HTML, CSS, Vanilla JavaScript
-- PHP 8.2+ Native OOP
-- MySQL 8
-- Docker Compose
-- PHPUnit 10+
-- PDO prepared statement
+- Docker Compose, PHPUnit, SonarQube
 
-## Database
-Database MySQL yang digunakan oleh aplikasi adalah:
-
-```text
-inventory_db
-```
-
-Database configuration is supplied through the local `.env` file:
-
-```text
-DB_HOST
-DB_PORT
-DB_DATABASE
-DB_USERNAME
-DB_PASSWORD
-```
-
-Port MySQL dari host Mac:
-
-```text
-localhost:3307
-```
-
-## Run with Docker
-Jalankan dari root project:
+## Menjalankan aplikasi
 
 ```bash
 docker compose up -d --build
 ```
 
-Buka:
+Buka `http://localhost:8080`. Database tersedia pada `localhost:3307` untuk kebutuhan lokal.
 
-```text
-http://localhost:8080
-```
+Untuk instalasi baru, Compose memuat `database/schema-and-seed.sql`: 30 produk, dua gudang, dua akun Sales, dua akun Warehouse Staff, serta 13 PO dan 12 SO untuk data latihan. Verifikasi jumlah data dengan `database/verify-demo-seed.sql`.
 
-Database dan seed otomatis dibuat oleh `database/schema-and-seed.sql` pada first run volume MySQL.
+| Peran demo pada instalasi baru | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@example.test` | `Admin123!` |
+| Sales | `member1@example.test` | `Member123!` |
+| Petugas Gudang | `warehouse1@example.test` | `Member123!` |
 
-### Reset database development
-> Perintah ini menghapus volume database Docker. Gunakan hanya jika data development boleh dihapus.
+Akun ini hanya untuk data latihan dari seed. Ubah password sebelum menggunakan sistem di luar lingkungan latihan.
 
-```bash
-docker compose down -v
-docker compose up -d --build
-```
+Jika database telah berisi data, jangan jalankan ulang `database/schema-and-seed.sql` karena skrip itu menjatuhkan dan membuat ulang tabel. Backup dulu, lalu tinjau migrasi yang belum diterapkan. Database aktif latihan ini sudah menjalankan migrasi ledger, kategori, dan constraint; skrip di `database/upgrade-*.sql` bersifat sekali jalan dan tidak boleh dijalankan ulang tanpa pemeriksaan skema.
 
-### Check container
+Untuk menyiapkan contoh alur pada **database latihan yang sudah dibackup**, gunakan `docker compose exec -e ALLOW_DEMO_DATA=1 app php scripts/prepare-intermediate-demo.php`. Script ini menambah satu PO `PartiallyReceived` dan satu SO `PendingApproval` jika contohnya belum ada, tanpa mengubah order lama.
+
+## Pemeriksaan operasional
 
 ```bash
 docker compose ps
 docker compose logs app --tail=50
-docker compose logs db --tail=50
+curl http://localhost:8080/health/ready
+curl http://localhost:8080/metrics
 ```
 
-## Local accounts
-Create local development accounts through the database seed or user management page. Do not publish account passwords.
+Untuk memeriksa stok rendah dari container aplikasi:
 
-## Inventory Flow
-
-```text
-Purchase Order → Receive → Stock In → Stock Movement → Stock
-Sales Order    → Complete → Stock Out → Stock Movement → Stock
+```bash
+docker compose exec app php scripts/check-low-stock.php
 ```
 
-Stok disimpan per kombinasi produk dan gudang melalui tabel `stocks`, sedangkan histori perubahan disimpan pada `stock_movements`.
-
-## Database Tables
-
-```text
-users
-projects
-tasks
-products
-suppliers
-customers
-warehouses
-purchase_orders
-purchase_order_details
-sales_orders
-sales_order_details
-stocks
-stock_movements
-```
-
-## Unit Test
-Jika dependency Composer tersedia:
+## Pengujian
 
 ```bash
 composer install
 vendor/bin/phpunit
+vendor/bin/phpstan analyse --debug --no-progress
 ```
 
-### Integration test
-
-Jalankan aplikasi Docker terlebih dahulu, lalu jalankan pemeriksaan endpoint aplikasi dan database:
+Untuk pengujian di container:
 
 ```bash
-APP_URL=http://localhost:8080 vendor/bin/phpunit --testsuite Integration
+docker compose -f docker-compose.test.yml build test
+docker compose -f docker-compose.test.yml run --rm test
 ```
 
-## Project Structure
+Pengujian integrasi transaksi menggunakan database MySQL sementara yang terpisah:
+
+```bash
+docker compose -p gudang-kita-integration -f docker-compose.integration.yml up --build --abort-on-container-exit --exit-code-from integration-test
+docker compose -p gudang-kita-integration -f docker-compose.integration.yml down -v
+```
+
+## Struktur proyek
 
 ```text
-public/       entry point + assets
-app/          controller, repository, validation, security
-views/        UI templates
-config/       configuration
-database/     schema + seed
-tests/        unit tests
-docs/         planning + testing evidence
+app/          Controller, Service, Repository, Entity, Security, Validation
+views/        Template UI
+public/       Entry point, endpoint health, metrics, dan aset
+database/     Schema, seed, serta upgrade database
+docs/         ERD, ADR, scope, test scenario, dan dokumen DevOps
+scripts/      Job operasional, termasuk pemeriksaan stok rendah
 ```
 
-## UI
-Nama aplikasi: **Gudang Kita**
+Konfigurasi rahasia disimpan di `.env` yang tidak dilacak Git. Gunakan `.env.example` sebagai acuan konfigurasi lokal.
 
-Tema: **pink lembut**.
+## Keterbatasan yang diketahui
+
+- Diagram initial historis belum tersedia; [catatan diagram awal](docs/planning/class-diagram-initial.md) menjelaskan keterbatasannya secara jujur.
+- [Bukti responsif](docs/testing/screenshots/README.md) dan uji dari folder bersih sudah tersedia; video demo dan tag/release final belum disiapkan.
+- Alasan penolakan Sales Order belum disimpan sebagai field tersendiri.

@@ -7,32 +7,41 @@ namespace App\Controller;
 use App\Repository\PurchaseOrderRepository;
 use App\Repository\InventoryRepository;
 use App\Security\Auth;
+use App\Contract\PurchaseOrderWorkflowRepositoryInterface;
+use App\Service\PurchaseOrderService;
 
 final class PurchaseOrderController extends BaseController
 {
     private PurchaseOrderRepository $repo;
     private InventoryRepository $inv;
+    private PurchaseOrderService $service;
 
-    public function __construct(\PDO $pdo)
+    public function __construct(\PDO $pdo, ?PurchaseOrderRepository $repo = null, ?InventoryRepository $inventory = null, ?PurchaseOrderService $service = null)
     {
         parent::__construct($pdo);
-        $this->repo = new PurchaseOrderRepository($pdo);
-        $this->inv = new InventoryRepository($pdo);
+        $this->repo = $repo ?? new PurchaseOrderRepository($pdo);
+        $this->inv = $inventory ?? new InventoryRepository($pdo);
+        $this->service = $service ?? new PurchaseOrderService($this->repo);
     }
 
     public function index(): void
     {
         Auth::requireWarehouseAccess();
-
+        $filters = [
+            'search' => trim((string) ($_GET['search'] ?? '')),
+            'status' => (string) ($_GET['status'] ?? ''),
+            'sort' => (string) ($_GET['sort'] ?? 'date_desc'),
+        ];
         $this->view('purchase/index', [
             'pageTitle' => 'Purchase Order',
-            'result' => paginate($this->repo->all(), (int) ($_GET['current_page'] ?? 1)),
+            'result' => $this->repo->list($filters, (int) ($_GET['current_page'] ?? 1)),
+            'filters' => $filters,
         ]);
     }
 
     public function create(): void
     {
-        Auth::requireAdmin();
+        Auth::requireWarehouseAccess();
 
         $this->view('purchase/form', [
             'pageTitle' => 'Tambah Purchase Order',
@@ -44,30 +53,25 @@ final class PurchaseOrderController extends BaseController
 
     public function store(): void
     {
-        Auth::requireAdmin();
+        Auth::requireWarehouseAccess();
         $this->csrf();
 
-        $details = $this->details();
-
-        if (!$details) {
-            flash('error', 'Minimal satu detail produk harus diisi.');
-            redirect('purchase');
-            return;
-        }
-
         try {
-            $this->repo->create([
+            $details = $this->details();
+            $this->service->create([
                 'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
                 'warehouse_id' => (int) ($_POST['warehouse_id'] ?? 0),
                 'po_date' => (string) ($_POST['po_date'] ?? date('Y-m-d')),
-                'status' => (string) ($_POST['status'] ?? 'Draft'),
                 'notes' => trim((string) ($_POST['notes'] ?? '')),
             ], $details);
 
             flash('success', 'Purchase Order berhasil dibuat.');
         }
         catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', $this->errorMessage($e, 'Purchase Order tidak dapat disimpan. Periksa data dan coba lagi.'));
+            http_response_code(422);
+            $this->create();
+            return;
         }
 
         redirect('purchase');
@@ -98,14 +102,28 @@ final class PurchaseOrderController extends BaseController
 
         try {
             $status = (string) ($_POST['status'] ?? '');
-            $this->repo->setStatus($id, $status);
+            $this->service->transition($id, $status, Auth::role());
             flash('success', 'Status Purchase Order diperbarui.');
         }
         catch (\Throwable $e) {
-            flash('error', $e->getMessage());
+            flash('error', $this->errorMessage($e, 'Status Purchase Order tidak dapat diubah.'));
         }
 
         redirect('purchase');
+    }
+
+
+    public function receive(int $id): void
+    {
+        Auth::requireWarehouseAccess();
+        $this->csrf();
+        try {
+            $this->service->receive($id, $_POST['received_qty'] ?? [], Auth::id());
+            flash('success', 'Penerimaan barang dan stok berhasil dicatat.');
+        } catch (\Throwable $e) {
+            flash('error', $this->errorMessage($e, 'Penerimaan barang tidak dapat diproses.'));
+        }
+        redirect('purchase', ['action' => 'view', 'id' => $id]);
     }
 
     private function details(): array
@@ -117,17 +135,15 @@ final class PurchaseOrderController extends BaseController
         $price = $_POST['price'] ?? [];
 
         foreach ($ids as $i => $id) {
-            $productId = (int) $id;
-            $quantity = (float) ($qty[$i] ?? 0);
-            $unitPrice = (float) ($price[$i] ?? 0);
-
-            if ($productId > 0 && $quantity > 0) {
-                $out[] = [
-                    'product_id' => $productId,
-                    'qty' => $quantity,
-                    'price' => $unitPrice,
-                ];
+            $quantityInput = trim((string) ($qty[$i] ?? ''));
+            $priceInput = trim((string) ($price[$i] ?? ''));
+            if (trim((string) $id) === '' && $quantityInput === '' && $priceInput === '') {
+                continue;
             }
+            if (!ctype_digit((string) $id) || (int) $id < 1 || !is_numeric($quantityInput) || (float) $quantityInput <= 0 || !is_numeric($priceInput) || (float) $priceInput < 0) {
+                throw new \DomainException('Setiap baris PO harus memiliki produk, jumlah lebih dari nol, dan harga tidak negatif.');
+            }
+            $out[] = ['product_id' => (int) $id,'qty' => (float) $quantityInput,'price' => (float) $priceInput];
         }
 
         return $out;
