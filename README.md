@@ -1,6 +1,6 @@
 # Gudang Kita — Inventory & Project Management System
 
-Final Project Training Junior Programmer 2026 — PT Neuronworks Indonesia.
+
 
 ## Scope
 Gudang Kita menggabungkan **Inventory Management** dan **Project Activity & Task Management** dalam satu aplikasi.
