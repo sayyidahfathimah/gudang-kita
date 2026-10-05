@@ -1,6 +1,6 @@
 # Checklist Final Project — Gudang Kita
 
-**Acuan:** `Guidelines - Presentation Final Project (Peserta).pdf` (2 halaman) dan `Project Brief - Programmer.pdf` (19 halaman). Pemeriksaan lokal: **6 Oktober 2026**. Checklist ini membedakan fitur yang berjalan, bukti yang belum lengkap, dan tindakan yang harus dilakukan peserta sendiri. `✅` berarti diperiksa, `⚠️` berarti sebagian/menunggu bukti, dan `❌` berarti belum memenuhi. Status Sonar di bawah berasal dari pemindaian ulang source lokal; tag `v1.0.0` masih menunjuk revisi sebelum perbaikan pada dokumen ini.
+**Acuan:** `Guidelines - Presentation Final Project (Peserta).pdf` (2 halaman) dan `Project Brief - Programmer.pdf` (19 halaman). Pemeriksaan lokal: **6 Oktober 2026**. Checklist ini membedakan fitur yang berjalan, bukti yang belum lengkap, dan tindakan yang harus dilakukan peserta sendiri. `✅` berarti diperiksa, `⚠️` berarti sebagian/menunggu bukti, dan `❌` berarti belum memenuhi. Perbaikan sudah dikirim ke `origin/main`; tag `v1.0.0` masih menunjuk revisi sebelum perbaikan.
 
 ## A. Guidelines — persiapan dan presentasi
 
@@ -11,7 +11,7 @@
 | Docker Compose menjalankan aplikasi dan MySQL dari folder bersih mengikuti README | ✅ | [README](../../README.md) dan [hasil pengujian](../testing/results-2026-10-05.md). Salinan bersih telah diuji; aplikasi dan DB aktif saat audit berstatus **healthy**. |
 | Data demo aman, konsisten, mencakup alur utama dan pembatasan tiga role | ⚠️ | Seed bersih menyediakan 1 Admin, 2 Sales, 2 Warehouse Staff, 2 gudang, 30 produk, 25 order. Database latihan aktif memiliki contoh PO partial dan SO pending; detail ledger historis punya batasan pada bagian D. Hindari menampilkan `.env` atau kredensial aktif di layar. |
 | Unit test, integration test, dan static analysis tersedia | ✅ | Saat audit: **31 unit/55 assertion**, **9 integration MySQL/28 assertion**, dan **PHPStan level 5: 0 error**. Perintah ada di [README](../../README.md); bukti sebelumnya di [hasil pengujian](../testing/results-2026-10-05.md). |
-| SonarQube lulus dan hasilnya dipahami | ⚠️ | Pemindaian **source lokal setelah perbaikan**: quality gate `OK`, *new code coverage* **93,9%**, duplikasi baru **2,52%**, dan **0 issue baru** pada gate. Pemindaian awal tag `v1.0.0` gagal; buat revisi final, jalankan pemindaian ulang atas revisi itu, lalu tunjukkan hasilnya di SonarQube. |
+| SonarQube lulus dan hasilnya dipahami | ⚠️ | Pemindaian commit `ae399ac` di `main`: quality gate `OK`, *new code coverage* **93,9%**, duplikasi baru **2,52%**, dan **0 issue terbuka**. Tunjukkan hasilnya di SonarQube; tag `v1.0.0` masih lama, jadi jangan mengaitkan hasil ini dengan tag tersebut. |
 | Source, skema, query, Docker, class diagram, ADR, dan refactor siap dibuka | ✅ | [Skema](../../database/schema-and-seed.sql), [diagram as-built](../architecture/class-diagram.md), [ADR](../architecture/adr-002-atomic-stock-ledger.md), [refactor log](../quality/refactor-log.md), [Docker Compose](../../docker-compose.yml). |
 | Screenshot atau video cadangan | ⚠️ | [Screenshot](../testing/screenshots/README.md) desktop/360 px untuk lima halaman ada. Rekaman alur PO → SO → ledger tiga role belum tersedia. |
 | Presentasi maksimal **10 menit** + 10 menit tanya jawab | ⚠️ | Jadwal yang berlaku untuk peserta ada pada *Guidelines*: pembukaan 1 menit, demo 4, teknis 3, kualitas 1, refleksi 1. Latihan dengan timer harus dilakukan peserta. Durasi 12–15 menit pada *Brief* adalah uraian demo umum; ikuti batas 10 menit pada dokumen presentasi. |
@@ -55,12 +55,12 @@
 | TEST-03: PHPStan 5+ nol critical, test independen | ✅ | PHPStan level 5: 0 error; unit/integration lulus pada container terpisah. |
 | Docker clean start, `.env.example`, README, app+DB service | ✅ | Salinan folder bersih dan login/alur utama sudah diuji; [README](../../README.md), [Compose](../../docker-compose.yml). |
 | Git individual, tanpa secret/PII aktif dalam repo/history, AI disclosure | ⚠️ | `.env` dan backup di-ignore; pemindaian pola pada history tidak menemukan kandidat. Ini bukan jaminan ketiadaan seluruh secret. Tinjau ulang backup/screenshot/seed sebelum menyerahkan repo publik; [AI log](../../ai-usage-log.md) ada. |
-| Paket dokumentasi, data minimum demo, tag/release final | ⚠️ | Struktur docs, skema, test dan tag `v1.0.0` ada. Perbaikan Sonar terbaru belum berada di tag itu; setelah review peserta, buat revisi/tag final dan pindai ulang. |
+| Paket dokumentasi, data minimum demo, tag/release final | ⚠️ | Struktur docs, skema, test dan tag `v1.0.0` ada. Perbaikan Sonar terbaru sudah di `main`, tetapi belum berada di tag; jika penilaian memakai tag, buat tag rilis baru setelah review peserta. |
 | Peserta mampu menjelaskan alur data, satu ADR, refactor, transaksi, query, dan batasan | ⚠️ | Ini perlu latihan dan pembuktian lisan saat defense. Nilai akhir ≥80 dan bebas *critical failure* diputuskan assessor, bukan hasil audit repo. |
 
 ## D. Pekerjaan sebelum dinyatakan sepenuhnya siap
 
-1. **Sinkronkan revisi final:** periksa perubahan lokal, simpan pada commit/tag baru, jalankan unit, integration, PHPStan, dan Sonar atas **commit/tag tersebut**, lalu pastikan remote/submission menunjuk revisi yang sama. Jangan menilai tag `v1.0.0` memakai hasil scan working tree saat ini.
+1. **Sinkronkan revisi final:** `main` sudah berisi perbaikan dan Sonar lulus pada commit `ae399ac`. Pastikan tautan submission menunjuk `main` terbaru. Jika penilaian memakai tag, buat tag baru dari revisi terbaru dan jangan menilai tag `v1.0.0` memakai hasil scan `main`.
 2. **Lengkapi bukti demo:** screenshot empty state PO/SO, upload gambar tidak valid, filter/sort/pagination PO/SO, alur tiga role, dua gudang berbeda, serta CSV dan dashboard pada data yang sama.
 3. **Periksa data lama secara aman:** buat backup sebelum membuat baris stok produk–gudang yang belum ada; tetapkan saldo awal dan ledger yang dapat ditelusuri. Movement historis tanpa aktor asli tidak boleh direka. [Batas rekonsiliasi](project-brief-compliance.md) menjelaskan data aktif.
 4. **Cari artefak diagram initial yang benar-benar dibuat sebelum coding.** Jika tidak ada, sampaikan sebagai kekurangan kepada assessor.
