@@ -15,11 +15,6 @@ final class SalesOrderRepository implements SalesOrderRepositoryInterface
 
     public function list(array $filters = [], ?int $createdBy = null, int $page = 1, int $perPage = 10): array
     {
-        $sql = 'SELECT so.*, c.name AS customer_name, w.name AS warehouse_name, creator.name AS creator_name
-            FROM sales_orders so
-            JOIN customers c ON c.id = so.customer_id
-            JOIN warehouses w ON w.id = so.warehouse_id
-            LEFT JOIN users creator ON creator.id = so.created_by';
         $where = [];
         $params = [];
         if ($createdBy !== null) {

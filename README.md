@@ -114,6 +114,7 @@ Konfigurasi rahasia disimpan di `.env` yang tidak dilacak Git. Gunakan `.env.exa
 
 ## Keterbatasan yang diketahui
 
+- [Checklist dua dokumen Final Project](docs/planning/checklist-final-project.md) memuat status bukti, kekurangan, dan langkah sebelum presentasi.
 - Diagram initial historis belum tersedia; [catatan diagram awal](docs/planning/class-diagram-initial.md) menjelaskan keterbatasannya secara jujur.
-- [Bukti responsif](docs/testing/screenshots/README.md) dan uji dari folder bersih sudah tersedia; video demo dan tag/release final belum disiapkan.
+- [Bukti responsif](docs/testing/screenshots/README.md) dan uji dari folder bersih sudah tersedia; video demo belum disiapkan. Tag `v1.0.0` sudah ada, tetapi perbaikan Sonar sesudah tag itu harus disimpan dan dipindai ulang sebagai revisi final.
 - Alasan penolakan Sales Order belum disimpan sebagai field tersendiri.

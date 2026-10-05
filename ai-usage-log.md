@@ -36,3 +36,11 @@ No client credentials, production secrets, or private company data are included 
 - Batas: delapan angka dashboard Admin cocok dengan query database, Sales 02 menampilkan SO miliknya, dan antrean Gudang sesuai order aktif. Simulasi MySQL putus pada container terpisah mengonfirmasi HTTP 503 tanpa bocoran SQLSTATE/PDOException.
 
 - Pemeriksaan Git: `.env`/backup tidak terlacak, lima commit serta 178 file kerja diperiksa untuk pola token/private key dan tidak ada kandidat. Pemindaian pola tidak membuktikan ketiadaan semua rahasia.
+
+## 6 Oktober 2026 — Checklist dua dokumen final project
+
+- Tool: OpenAI Codex.
+- Tujuan/prompt pengguna (ringkasan): menyusun checklist dari Guidelines Presentation Final Project dan Project Brief Intermediate serta memeriksa kesesuaian aplikasi.
+- Output yang digunakan: checklist status dan bukti per requirement, perbaikan temuan Sonar pada source lokal, label form, dan perluasan cakupan PHPUnit ke Service yang diuji.
+- Output yang ditolak: mengklaim tag `v1.0.0` sudah lulus berdasarkan scan working tree; membuat diagram initial historis palsu; mengubah database aktif tanpa backup.
+- Verifikasi: 31 unit/55 assertion, 9 integration MySQL/28 assertion, 9 skenario HTTP, PHPStan level 5 tanpa error, Sonar quality gate lokal `OK`. Keterbatasan dan tindak lanjut dicatat pada `docs/planning/checklist-final-project.md`.

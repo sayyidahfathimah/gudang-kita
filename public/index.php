@@ -30,29 +30,30 @@ $page = (string)($_GET['page'] ?? 'dashboard');
 $action = (string)($_GET['action'] ?? 'index');
 $id = (int)($_GET['id'] ?? 0);
 $public = ['login'];
+define('FORBIDDEN_VIEW', BASE_PATH.'/views/403.php');
 if (!in_array($page, [...$public, 'api'], true) && !isset($_SESSION['user_id'])) {
     redirect('login');
 }
 if (in_array($page, ['projects','tasks'], true) && !in_array((string)($_SESSION['role'] ?? ''), ['Admin','Sales'], true)) {
     http_response_code(403);
-    require_once BASE_PATH.'/views/403.php';
+    require_once FORBIDDEN_VIEW;
     exit;
 }
 if (in_array($page, ['purchase','stock','movements'], true) && !in_array((string)($_SESSION['role'] ?? ''), ['Admin','WarehouseStaff'], true)) {
     http_response_code(403);
-    require_once BASE_PATH.'/views/403.php';
+    require_once FORBIDDEN_VIEW;
     exit;
 }
 if ($page === 'masters' && in_array((string)($_SESSION['role'] ?? ''), ['Sales','WarehouseStaff'], true) && $action === 'catalog') {
     // Read-only active product catalog for Sales and Warehouse Staff.
 } elseif ($page === 'masters' && !in_array((string)($_SESSION['role'] ?? ''), ['Admin'], true)) {
     http_response_code(403);
-    require_once BASE_PATH.'/views/403.php';
+    require_once FORBIDDEN_VIEW;
     exit;
 }
 if ($page === 'sales' && !in_array((string)($_SESSION['role'] ?? ''), ['Admin','Sales','WarehouseStaff'], true)) {
     http_response_code(403);
-    require_once BASE_PATH.'/views/403.php';
+    require_once FORBIDDEN_VIEW;
     exit;
 }
 $map = ['login' => \App\Controller\Auth\LoginController::class,'logout' => \App\Controller\Auth\LoginController::class,'dashboard' => \App\Controller\DashboardController::class,'users' => \App\Controller\UserController::class,'projects' => \App\Controller\ProjectController::class,'tasks' => \App\Controller\TaskController::class,'masters' => \App\Controller\InventoryMasterController::class,'stock' => \App\Controller\InventoryController::class,'movements' => \App\Controller\InventoryController::class,'purchase' => \App\Controller\PurchaseOrderController::class,'sales' => \App\Controller\SalesOrderController::class,'reports' => \App\Controller\ReportController::class,'api' => \App\Controller\ApiController::class];

@@ -5,8 +5,8 @@
 <div class="card filter-card">
   <form class="filter-grid" method="get">
     <input type="hidden" name="page" value="movements">
-    <select name="product_id"><option value="">Semua produk</option><?php foreach ($products as $p): ?><option value="<?=e($p['id'])?>" <?=$filters['product_id'] == $p['id'] ? 'selected' : ''?>><?=e($p['code'].' - '.$p['name'])?></option><?php endforeach; ?></select>
-    <select name="warehouse_id"><option value="">Semua gudang</option><?php foreach ($warehouses as $w): ?><option value="<?=e($w['id'])?>" <?=$filters['warehouse_id'] == $w['id'] ? 'selected' : ''?>><?=e($w['name'])?></option><?php endforeach; ?></select>
+    <label for="movement-product">Produk</label><select id="movement-product" name="product_id"><option value="">Semua produk</option><?php foreach ($products as $p): ?><option value="<?=e($p['id'])?>" <?=$filters['product_id'] == $p['id'] ? 'selected' : ''?>><?=e($p['code'].' - '.$p['name'])?></option><?php endforeach; ?></select>
+    <label for="movement-warehouse">Gudang</label><select id="movement-warehouse" name="warehouse_id"><option value="">Semua gudang</option><?php foreach ($warehouses as $w): ?><option value="<?=e($w['id'])?>" <?=$filters['warehouse_id'] == $w['id'] ? 'selected' : ''?>><?=e($w['name'])?></option><?php endforeach; ?></select>
     <button class="btn btn-primary">Filter</button><a class="btn" href="?page=movements">Reset</a>
   </form>
 </div>
@@ -16,7 +16,10 @@
   <?php foreach ($result['items'] as $r):
       $type = (string) $r['transaction_type'];
       $direction = (string) ($r['adjustment_direction'] ?? '');
-      $label = $type === 'Adjustment' ? 'Penyesuaian '.($direction === 'Increase' ? 'Masuk' : 'Keluar') : $type;
+      $label = $type;
+      if ($type === 'Adjustment') {
+          $label = $direction === 'Increase' ? 'Penyesuaian Masuk' : 'Penyesuaian Keluar';
+      }
       $positive = $type === 'Receipt' || ($type === 'Adjustment' && $direction === 'Increase');
   ?>
     <tr>

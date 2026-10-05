@@ -7,7 +7,7 @@
         <label>Kategori<select name="category_id"><option value="">Semua kategori</option>
             <?php foreach ($categories as $category): ?><option value="<?= (int) $category['id'] ?>" <?= $filters['category_id'] == $category['id'] ? 'selected' : '' ?>><?= e($category['name']) ?></option><?php endforeach; ?>
         </select></label>
-        <?php include BASE_PATH.'/views/masters/sort-field.php'; ?>
+        <?php include_once BASE_PATH.'/views/masters/sort-field.php'; ?>
         <button class="btn btn-primary">Cari</button>
         <a class="btn" href="?page=masters&amp;action=catalog">Reset</a>
     </form>

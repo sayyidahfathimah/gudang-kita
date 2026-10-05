@@ -10,7 +10,7 @@
 <?php if (in_array(($currentUser['role'] ?? ''), ['Admin', 'WarehouseStaff'], true) && in_array($order['status'], ['Ordered', 'PartiallyReceived'], true)): ?>
 <div class="card form-card"><h2>Terima Barang</h2><p class="muted">Masukkan jumlah yang diterima pada pengiriman ini. Stok dan riwayat IN dicatat setelah disimpan.</p><form method="post" action="?page=purchase&amp;action=receive&amp;id=<?= $order['id'] ?>"><?= $csrfField ?><div class="table-wrap"><table><thead><tr><th>Produk</th><th>Sisa</th><th>Diterima Sekarang</th></tr></thead><tbody>
 <?php foreach ($order['details'] as $detail): $remaining = (float) $detail['qty'] - (float) $detail['received_qty']; ?>
-<tr><td><?= e($detail['product_code'].' - '.$detail['product_name']) ?></td><td><?= number_format($remaining, 2, ',', '.') ?> <?= e($detail['unit']) ?></td><td><input type="number" name="received_qty[<?= $detail['id'] ?>]" min="0" max="<?= $remaining ?>" step="0.01" value="0" <?= $remaining <= 0 ? 'readonly' : '' ?>></td></tr>
+<tr><td><?= e($detail['product_code'].' - '.$detail['product_name']) ?></td><td><?= number_format($remaining, 2, ',', '.') ?> <?= e($detail['unit']) ?></td><td><label for="received-<?= (int) $detail['id'] ?>">Qty <?= e($detail['product_name']) ?></label><input id="received-<?= (int) $detail['id'] ?>" type="number" name="received_qty[<?= $detail['id'] ?>]" min="0" max="<?= $remaining ?>" step="0.01" value="0" <?= $remaining <= 0 ? 'readonly' : '' ?>></td></tr>
 <?php endforeach; ?>
 </tbody></table></div><div class="form-actions"><a class="btn" href="?page=purchase">Kembali</a><button class="btn btn-primary">Catat penerimaan</button></div></form></div>
 <?php endif; ?>

@@ -1,49 +1,136 @@
 # Class Diagram As-Built — Gudang Kita
 
-Diagram ini mengikuti kelas yang tersedia pada kode saat ini. Panah `..|>` berarti implementasi interface; panah `-->` berarti penggunaan kelas konkret; panah `..>` menunjukkan Service menerima kontrak melalui constructor.
+Diagram ini menggambarkan **kelas PHP yang benar-benar ada** pada aplikasi. Fokusnya adalah alur Purchase Order (PO), Sales Order (SO), dan laporan, karena alur tersebut mewakili pemisahan Controller, Service, dan Repository yang diminta brief. Diagram database dan relasi tabel berada di [ERD](../planning/erd.md).
+
+## Alur transaksi PO dan SO
 
 ```mermaid
 classDiagram
-    class SalesOrderController
-    class PurchaseOrderController
-    class ReportController
-    class SalesOrderService
-    class PurchaseOrderService
-    class ReportAccessPolicy
-    class SalesOrderRepositoryInterface { <<interface>> }
-    class PurchaseOrderRepositoryInterface { <<interface>> }
-    class PurchaseOrderWorkflowRepositoryInterface { <<interface>> }
-    class SalesOrderRepository
-    class PurchaseOrderRepository
-    class ReportRepository
+    direction LR
+
+    class BaseController {
+        #PDO pdo
+    }
+    class PurchaseOrderController {
+        -PurchaseOrderRepository repo
+        -InventoryRepository inv
+        -PurchaseOrderService service
+        +store()
+        +status(id)
+        +receive(id)
+    }
+    class SalesOrderController {
+        -SalesOrderRepository repo
+        -InventoryRepository inventory
+        -SalesOrderService service
+        +store()
+        +status(id)
+    }
+    class PurchaseOrderService {
+        -PurchaseOrderWorkflowRepositoryInterface repository
+        +create(data, details)
+        +transition(id, target, role)
+        +receive(id, quantities, actorId)
+    }
+    class SalesOrderService {
+        -SalesOrderRepositoryInterface repository
+        +create(data, details, createdBy)
+        +transition(id, target, actorId, role)
+    }
+    class PurchaseOrderRepositoryInterface {
+        <<interface>>
+        +create(data, details)
+        +transition(id, target, role)
+        +receive(id, quantities, actorId)
+    }
+    class PurchaseOrderWorkflowRepositoryInterface {
+        <<interface>>
+        +find(id)
+    }
+    class SalesOrderRepositoryInterface {
+        <<interface>>
+        +create(data, details, createdBy)
+        +transition(id, target, actorId, role)
+    }
+    class PurchaseOrderRepository {
+        +create(data, details)
+        +transition(id, target, role)
+        +receive(id, quantities, actorId)
+    }
+    class SalesOrderRepository {
+        +create(data, details, createdBy)
+        +transition(id, target, actorId, role)
+    }
     class InventoryRepository
-    class InMemorySalesOrderRepository
     class InMemoryPurchaseOrderRepository
-    class StockMovementType { <<enumeration>> }
+    class InMemorySalesOrderRepository
+    class StockMovementType {
+        <<enumeration>>
+        Receipt
+        Issue
+        Adjustment
+    }
     class PDO
 
-    SalesOrderController --> SalesOrderService : concrete
-    SalesOrderController --> SalesOrderRepository : concrete
-    SalesOrderController --> InventoryRepository : concrete
-    PurchaseOrderController --> PurchaseOrderService : concrete
-    PurchaseOrderController --> PurchaseOrderRepository : concrete
-    PurchaseOrderController --> InventoryRepository : concrete
-    ReportController --> ReportAccessPolicy : concrete
-    ReportController --> ReportRepository : concrete
-    SalesOrderService ..> SalesOrderRepositoryInterface : constructor interface
-    PurchaseOrderService ..> PurchaseOrderRepositoryInterface : constructor interface
-    PurchaseOrderWorkflowRepositoryInterface --|> PurchaseOrderRepositoryInterface
-    SalesOrderRepository ..|> SalesOrderRepositoryInterface
-    PurchaseOrderRepository ..|> PurchaseOrderWorkflowRepositoryInterface
-    InMemorySalesOrderRepository ..|> SalesOrderRepositoryInterface : unit fake
-    InMemoryPurchaseOrderRepository ..|> PurchaseOrderRepositoryInterface : unit fake
-    SalesOrderRepository --> StockMovementType
-    PurchaseOrderRepository --> StockMovementType
-    SalesOrderRepository --> PDO
-    PurchaseOrderRepository --> PDO
-    ReportRepository --> PDO
+    BaseController <|-- PurchaseOrderController
+    BaseController <|-- SalesOrderController
+
+    PurchaseOrderController --> PurchaseOrderService : menggunakan
+    PurchaseOrderController --> PurchaseOrderRepository : membaca PO / default constructor
+    PurchaseOrderController --> InventoryRepository : pilihan form
+    SalesOrderController --> SalesOrderService : menggunakan
+    SalesOrderController --> SalesOrderRepository : membaca SO / default constructor
+    SalesOrderController --> InventoryRepository : pilihan form
+
+    PurchaseOrderService ..> PurchaseOrderWorkflowRepositoryInterface : constructor injection
+    SalesOrderService ..> SalesOrderRepositoryInterface : constructor injection
+    PurchaseOrderRepositoryInterface <|-- PurchaseOrderWorkflowRepositoryInterface
+    PurchaseOrderWorkflowRepositoryInterface <|.. PurchaseOrderRepository
+    PurchaseOrderWorkflowRepositoryInterface <|.. InMemoryPurchaseOrderRepository
+    SalesOrderRepositoryInterface <|.. SalesOrderRepository
+    SalesOrderRepositoryInterface <|.. InMemorySalesOrderRepository
+
+    PurchaseOrderRepository --> PDO : query dan transaksi
+    SalesOrderRepository --> PDO : query dan transaksi
+    InventoryRepository --> PDO : query katalog
+    PurchaseOrderRepository ..> StockMovementType : Receipt
+    SalesOrderRepository ..> StockMovementType : Issue
 ```
 
-Service hanya mengetahui kontrak repository. Implementasi MySQL menyimpan perubahan order, stok, dan ledger di dalam transaksi; fake digunakan oleh unit test tanpa MySQL. Controller saat ini masih menerima atau membuat beberapa repository konkret karena composition root manual belum diterapkan secara menyeluruh.
+**Cara membaca panah:** `--|>` adalah pewarisan interface/kelas, `..|>` adalah implementasi interface, `-->` adalah pemakaian kelas konkret, dan `..>` adalah dependency pada kontrak atau enum. Dua kelas `InMemory...` ada di `tests/Fakes/`, bukan pada aplikasi produksi. `PurchaseOrderWorkflowRepositoryInterface` memperluas `PurchaseOrderRepositoryInterface` dengan operasi `find()`; **itulah tipe constructor** `PurchaseOrderService`. `SalesOrderService` menerima `SalesOrderRepositoryInterface`.
 
-Diagram initial historis belum ditemukan. Karena itu, perubahan waktu antara diagram sebelum coding dan diagram as-built tidak dapat dibuktikan; [catatan diagram awal](../planning/class-diagram-initial.md) mencatat keterbatasan tersebut.
+Saat menerima PO, `PurchaseOrderRepository` menulis `stocks` dan `stock_movements` bertipe `Receipt` dalam satu transaksi. Saat memenuhi SO, `SalesOrderRepository` mengunci baris stok (`FOR UPDATE`), menolak jumlah yang kurang, lalu menulis stok dan movement `Issue` dalam satu transaksi. `StockMovementType` adalah enum PHP; order, stok, dan ledger disimpan sebagai **tabel MySQL**, bukan kelas Entity PHP terpisah.
+
+## Alur laporan
+
+```mermaid
+classDiagram
+    direction LR
+    class BaseController
+    class ReportController {
+        -ReportRepository reports
+        -ReportAccessPolicy access
+        +index()
+    }
+    class ReportAccessPolicy {
+        +allowedReports(role)
+        +canDownload(role, report)
+    }
+    class ReportRepository {
+        +stockRows()
+        +movementRows(from, to)
+        +orderRows(from, to, actorId)
+        +purchaseMonthly(from, to)
+        +salesMonthly(from, to, salesId)
+    }
+    class PDO
+
+    BaseController <|-- ReportController
+    ReportController --> ReportAccessPolicy : cek izin
+    ReportController --> ReportRepository : mengambil data
+    ReportRepository --> PDO : query
+```
+
+Controller PO/SO menerima PDO dan dependency konkret opsional, tetapi jika tidak diberikan masih membuat repository sendiri. Jadi dependency inversion **sudah berlaku pada Service PO/SO**, belum merata pada seluruh controller; hal ini dicatat sebagai [technical debt](../quality/tech-debt.md). Kode rujukan: [controller PO](../../app/Controller/PurchaseOrderController.php), [controller SO](../../app/Controller/SalesOrderController.php), [service PO](../../app/Service/PurchaseOrderService.php), [service SO](../../app/Service/SalesOrderService.php), dan [kontrak repository](../../app/Contract/).
+
+Perbandingan dengan [diagram rancangan retrospektif](../planning/class-diagram-initial.md): rancangan konseptual hanya menunjukkan tiga layer dan kontrak repository. Implementasi as-built menambah pemisahan kontrak PO untuk `find()`, repository baca katalog, enum tipe movement, dan fake untuk unit test. Perbandingan ini menjelaskan perubahan desain, **bukan bukti** adanya diagram initial yang dibuat sebelum coding.

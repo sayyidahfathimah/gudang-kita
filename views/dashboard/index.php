@@ -8,10 +8,16 @@ $orders = $orders ?? [];
 $queues = $queues ?? ['receipts' => [], 'issues' => []];
 $isAdmin = $isAdmin ?? false;
 $isWarehouse = $isWarehouse ?? false;
+$intro = 'task dan Sales Order milik Anda';
+if ($isAdmin) {
+    $intro = 'operasional gudang, order, dan inventori';
+} elseif ($isWarehouse) {
+    $intro = 'antrean penerimaan dan pengeluaran barang';
+}
 function dashboardNumber($value): string { return number_format((float) ($value ?? 0), 0, ',', '.'); }
 function dashboardStatusClass(string $status): string { return strtolower(str_replace(' ', '-', $status)); }
 ?>
-<div class="dashboard-intro"><p class="muted">Ringkasan <?= $isAdmin ? 'operasional gudang, order, dan inventori' : ($isWarehouse ? 'antrean penerimaan dan pengeluaran barang' : 'task dan Sales Order milik Anda') ?>.</p><div class="service-status" aria-live="polite"><span class="service-dot is-pending" data-health-dot></span><span data-health-text>Memeriksa layanan…</span></div></div>
+<div class="dashboard-intro"><p class="muted">Ringkasan <?= e($intro) ?>.</p><div class="service-status" aria-live="polite"><span class="service-dot is-pending" data-health-dot></span><span data-health-text>Memeriksa layanan…</span></div></div>
 
 <?php if (!$isWarehouse): ?>
 <div class="stats-grid">

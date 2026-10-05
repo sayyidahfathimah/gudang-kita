@@ -3,6 +3,8 @@
  <source>
   <include>
    <directory suffix=".php">app/Validation</directory>
+   <directory suffix=".php">app/Service</directory>
+   <directory suffix=".php">app/Entity</directory>
   </include>
  </source>
  <testsuites>

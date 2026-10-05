@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\ReportRepository;
+use App\Exception\ReportOutputException;
 use App\Security\Auth;
 use App\Service\ReportAccessPolicy;
 use DateTimeImmutable;
@@ -41,12 +42,17 @@ final class ReportController extends BaseController
             return;
         }
 
+        $sales = [];
+        if ($role !== 'WarehouseStaff') {
+            $salesId = $role === 'Sales' ? Auth::id() : null;
+            $sales = $this->reports->salesMonthly($filters['from'], $filters['to'], $salesId);
+        }
         $this->view('reports/index', [
             'pageTitle' => 'Laporan',
             'role' => $role,
             'stock' => $role === 'Sales' ? [] : $this->reports->stockRows(),
             'purchase' => $role === 'Admin' ? $this->reports->purchaseMonthly($filters['from'], $filters['to']) : [],
-            'sales' => $role === 'WarehouseStaff' ? [] : $this->reports->salesMonthly($filters['from'], $filters['to'], $role === 'Sales' ? Auth::id() : null),
+            'sales' => $sales,
             'filters' => $filters,
             'report' => $report,
         ]);
@@ -85,11 +91,11 @@ final class ReportController extends BaseController
         header('Content-Disposition: attachment; filename="'.$filename.'"');
         $output = fopen('php://output', 'wb');
         if ($output === false) {
-            throw new \RuntimeException('Laporan tidak dapat dibuat.');
+            throw new ReportOutputException('Laporan tidak dapat dibuat.');
         }
         fputcsv($output, $header);
         foreach ($rows as $row) {
-            fputcsv($output, array_map(self::safeCsvCell(...), array_values($row)));
+            fputcsv($output, array_map(static fn (mixed $value): mixed => self::safeCsvCell($value), array_values($row)));
         }
         fclose($output);
     }
@@ -105,7 +111,7 @@ final class ReportController extends BaseController
     private function forbidden(): never
     {
         http_response_code(403);
-        require BASE_PATH.'/views/403.php';
+        require_once BASE_PATH.'/views/403.php';
         exit;
     }
 }

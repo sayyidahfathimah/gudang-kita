@@ -199,8 +199,15 @@ final class InventoryMasterController extends BaseController
         $d = [];
         foreach ($c['fields'] as $f) {
             $v = $_POST[$f] ?? '';
-            $d[$f] = in_array($f, ['purchase_price','selling_price','minimum_stock'], true) ? (float)$v : ($f === 'category_id' ? (int)$v : trim((string)$v));
-        }return $d;
+            if (in_array($f, ['purchase_price', 'selling_price', 'minimum_stock'], true)) {
+                $d[$f] = (float) $v;
+            } elseif ($f === 'category_id') {
+                $d[$f] = (int) $v;
+            } else {
+                $d[$f] = trim((string) $v);
+            }
+        }
+        return $d;
     }
     private function validate(string $type, array $d): array
     {

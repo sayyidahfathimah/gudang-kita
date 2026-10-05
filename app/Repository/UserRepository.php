@@ -66,25 +66,26 @@ final class UserRepository
 
         $s = $this->pdo->prepare('SELECT COUNT(*) FROM tasks WHERE assignee_id=?');
         $s->execute([$id]);
+        $deactivated = false;
         if ((int) $s->fetchColumn() > 0) {
             $s = $this->pdo->prepare('UPDATE users SET is_active=0 WHERE id=?');
             $s->execute([$id]);
-            return true;
-        }
-
-        try {
-            $s = $this->pdo->prepare('DELETE FROM users WHERE id=?');
-            $s->execute([$id]);
-            return false;
-        } catch (\PDOException $exception) {
-            // A related record may have been created between the check and
-            // delete. Preserve it and deactivate the account instead.
-            if ((string) $exception->getCode() !== '23000') {
-                throw $exception;
+            $deactivated = true;
+        } else {
+            try {
+                $s = $this->pdo->prepare('DELETE FROM users WHERE id=?');
+                $s->execute([$id]);
+            } catch (\PDOException $exception) {
+                // A related record may have been created between the check and
+                // delete. Preserve it and deactivate the account instead.
+                if ((string) $exception->getCode() !== '23000') {
+                    throw $exception;
+                }
+                $s = $this->pdo->prepare('UPDATE users SET is_active=0 WHERE id=?');
+                $s->execute([$id]);
+                $deactivated = true;
             }
-            $s = $this->pdo->prepare('UPDATE users SET is_active=0 WHERE id=?');
-            $s->execute([$id]);
-            return true;
         }
+        return $deactivated;
     }
 }

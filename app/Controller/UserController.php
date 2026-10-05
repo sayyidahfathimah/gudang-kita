@@ -10,6 +10,7 @@ final class UserController extends BaseController
 {
     private const FORM_VIEW = 'users/form';
     private const ADD_TITLE = 'Add User';
+    private const EDIT_TITLE = 'Edit User';
     private UserRepository $repo;
     public function __construct(\PDO $pdo)
     {
@@ -56,7 +57,7 @@ final class UserController extends BaseController
             http_response_code(404);
             require_once BASE_PATH.'/views/404.php';
             return;
-        }$this->view(self::FORM_VIEW, ['pageTitle' => 'Edit User','mode' => 'edit','user' => $u]);
+        }$this->view(self::FORM_VIEW, ['pageTitle' => self::EDIT_TITLE,'mode' => 'edit','user' => $u]);
     }
     public function update(int $id): void
     {
@@ -71,7 +72,7 @@ final class UserController extends BaseController
         $e = array_merge(UserValidator::validate($d), $this->repo->identityErrors($d, $id));
         if ($e) {
             $d['id'] = $id;
-            $this->view(self::FORM_VIEW, ['pageTitle' => 'Edit User','mode' => 'edit','user' => $d,'errors' => $e]);
+            $this->view(self::FORM_VIEW, ['pageTitle' => self::EDIT_TITLE,'mode' => 'edit','user' => $d,'errors' => $e]);
             return;
         }try {
             $this->repo->update($id, $d);
@@ -80,7 +81,7 @@ final class UserController extends BaseController
         }
         catch (\PDOException $x) {
             $d['id'] = $id;
-            $this->view(self::FORM_VIEW, ['pageTitle' => 'Edit User','mode' => 'edit','user' => $d,'errors' => ['form' => 'Data tidak dapat disimpan. Pastikan username dan email belum digunakan.']]);
+            $this->view(self::FORM_VIEW, ['pageTitle' => self::EDIT_TITLE,'mode' => 'edit','user' => $d,'errors' => ['form' => 'Data tidak dapat disimpan. Pastikan username dan email belum digunakan.']]);
         }
     }
     public function delete(int $id): void
