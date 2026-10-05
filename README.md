@@ -1,7 +1,5 @@
 # Gudang Kita — Inventory Management System
 
-Final Project Training Intermediate Programmer 2026 — PT Neuronworks Indonesia.
-
 ## Tujuan
 
 Gudang Kita mengelola master persediaan, pembelian, penjualan, stok per gudang, dan riwayat pergerakan stok. Aplikasi mencegah stok minus saat barang dikeluarkan serta memisahkan tugas Sales, Admin, dan Petugas Gudang.
